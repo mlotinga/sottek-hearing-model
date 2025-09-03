@@ -1,0 +1,23 @@
+[project]
+name = "sottek-hearing-model"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Mike Lotinga", email = "m_lotinga@yahoo.co.uk" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "bottleneck>=1.5.0",
+    "matplotlib>=3.10.6",
+    "numpy>=2.3.2",
+    "scipy>=1.16.1",
+    "tqdm>=4.67.1",
+]
+
+[project.scripts]
+sottek-hearing-model = "sottek_hearing_model:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
