@@ -1,20 +1,23 @@
 # -*- coding: utf-8 -*-
 # %% Preamble
 """
-acousticSHMLoudness.py
+shmLoudnessECMA.py
 ----------------------
 
 Returns loudness values according to ECMA-418-2:2025 (using the Sottek Hearing
 Model) for an input calibrated single mono or single stereo audio (sound
 pressure) time-series signal, p.
 
+A convenience function, shmLoudnessECMAFromComp, is also provided, which
+enables loudness to be calculated directly from the loudness components obtained
+using acousticSHMTonality. This reduces the calculation time for loudness to
+negligible when also calculating tonality.
+
 Requirements
 ------------
 numpy
 scipy
 matplotlib
-refmap-psychoacoustics (metrics.ecma418_2, dsp.filterFuncs and
-                        utils.formatFuncs)
 
 Ownership and Quality Assurance
 -------------------------------
@@ -22,13 +25,23 @@ Author: Mike JB Lotinga (m.j.lotinga@edu.salford.ac.uk)
 Institution: University of Salford
 
 Date created: 29/05/2023
-Date last modified: 23/07/2025
+Date last modified: 09/09/2025
 Python version: 3.11
 
 Copyright statement: This file and code is part of work undertaken within
 the RefMap project (www.refmap.eu), and is subject to licence as detailed
 in the code repository
 (https://github.com/acoustics-code-salford/refmap-psychoacoustics)
+
+As per the licensing information, please be aware that this code is WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE.
+Copyright statements: This file is based on code developed within the refmap-psychoacoustics
+repository (https://github.com/acoustics-code-salford/refmap-psychoacoustics),
+and as such is subject to copyleft licensing as detailed in the code repository
+(https://github.com/acoustics-code-salford/sottek-hearing-model).
+
+The code has been modified to omit unnecessary lines.
 
 As per the licensing information, please be aware that this code is WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
@@ -40,11 +53,11 @@ PARTICULAR PURPOSE.
 import numpy as np
 from matplotlib import pyplot as plt
 import matplotlib as mpl
-from src.py.metrics.ecma418_2.acousticSHMSubs import (shmResample,
-                                                      shmDimensional, shmRMS)
-from src.py.metrics.ecma418_2.acousticSHMTonality import acousticSHMTonality
-from src.py.dsp.filterFuncs import A_weight_T
-from src.py.utils.formatFuncs import roundTrad
+from sottek_hearing_model.shmSubs import (shmResample,
+                                          shmDimensional, shmRMS, shmRound,
+                                          shmInCheck)
+from sottek_hearing_model.shmTonalityECMA import shmTonalityECMA
+from sottek_hearing_model.filters import A_weight_T
 
 # %% Module settings
 mpl.rcParams['font.family'] = 'sans-serif'
@@ -60,8 +73,8 @@ plt.rc('legend', fontsize=16)  # legend fontsize
 plt.rc('figure', titlesize=20)  # fontsize of the figure title
 
 
-# %% acousticSHMLoudness
-def acousticSHMLoudness(p, sampleRateIn, axisN=0, soundField='freeFrontal',
+# %% shmLoudnessECMA
+def shmLoudnessECMA(p, sampleRateIn, axisN=0, soundField='freeFrontal',
                         waitBar=True, outPlot=False, binaural=True):
     """
     Inputs
@@ -159,28 +172,9 @@ def acousticSHMLoudness(p, sampleRateIn, axisN=0, soundField='freeFrontal',
 
     """
     # %% Input checks
-    # Orient input matrix
-    if axisN in [0, 1]:
-        if axisN == 1:
-            p = p.T
-    else:
-        raise ValueError("Input axisN must be an integer 0 or 1")
-
-    # Check the length of the input data (must be longer than 300 ms)
-    if p.shape[0] <= 300/1000*sampleRateIn:
-        raise ValueError('Input signal is too short along the specified axis to calculate loudness (must be longer than 300 ms)')
-
-    # Check the channel number of the input data
-    if p.shape[1] > 2:
-        raise ValueError('Input signal comprises more than two channels')
-
-    chansIn = p.shape[1]
-    if chansIn > 1:
-        chans = ["Stereo left",
-                 "Stereo right"]
-    else:
-        chans = ["Mono"]
-    # end of if branch for channel number check
+    p, chansIn, chans = shmInCheck(p, sampleRateIn, axisN,
+                                   soundField, waitBar, outPlot,
+                                   binaural)
 
     # %% Define constants
 
@@ -226,9 +220,9 @@ def acousticSHMLoudness(p, sampleRateIn, axisN=0, soundField='freeFrontal',
     # ------------------------------------------------------------
 
     # Obtain tonal and noise component specific loudnesses from Sections 5 & 6 ECMA-418-2:2025
-    tonalitySHM = acousticSHMTonality(p_re, sampleRate48k, axisN=0,
-                                      soundField=soundField,
-                                      waitBar=waitBar, outPlot=False)
+    tonalitySHM = shmTonalityECMA(p_re, sampleRate48k, axisN=0,
+                                  soundField=soundField,
+                                  waitBar=waitBar, outPlot=False)
 
     specTonalLoudness = tonalitySHM['specTonalLoudness']  # [N'_tonal(l,z)]
     specNoiseLoudness = tonalitySHM['specNoiseLoudness']  # [N'_noise(l,z)]
@@ -367,7 +361,7 @@ def acousticSHMLoudness(p, sampleRateIn, axisN=0, soundField='freeFrontal',
                 LAeq = 20*np.log10(shmRMS(pA)/2e-5)
 
             fig.suptitle(t=(chan_lab + " signal sound pressure level = " +
-                            str(roundTrad(LAeq, 1)) +
+                            str(shmRound(LAeq, 1)) +
                             r"dB $\mathregular{\mathit{L}_{Aeq}}$"))
             fig.show()
         # end of for loop over channels
@@ -415,12 +409,12 @@ def acousticSHMLoudness(p, sampleRateIn, axisN=0, soundField='freeFrontal',
 
     return loudnessSHM
 
-# end of acousticSHLoudness function
+# end of shmLoudnessECMA function
 
 
-# %% acousticSHMLoudnessFromComponent
-def acousticSHMLoudnessFromComponent(specTonalLoudness, specNoiseLoudness,
-                                     outPlot=False, binaural=True):
+# %% shmLoudnessECMAFromComp
+def shmLoudnessECMAFromComp(specTonalLoudness, specNoiseLoudness,
+                            outPlot=False, binaural=True):
     """
     Inputs
     ------
@@ -716,4 +710,4 @@ def acousticSHMLoudnessFromComponent(specTonalLoudness, specNoiseLoudness,
 
     return loudnessSHM
 
-# end of acousticSHLoudness function
+# end of shmLoudnessECMAFromComp function

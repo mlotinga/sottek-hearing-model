@@ -1,18 +1,14 @@
 # -*- coding: utf-8 -*-
 
-__all__ = ["acousticSHMTonality", "acousticSHMLoudness", "acousticSHMRoughness", "acousticSHMSubs", "utils"]
+from .shmTonalityECMA import shmTonalityECMA
 
-from .acousticSHMTonality import acousticSHMTonality
+from .shmLoudnessECMA import shmLoudnessECMA
 
-from .acousticSHMLoudness import acousticSHMLoudness
+from .shmLoudnessECMA import shmLoudnessFromCompECMA
 
-from .acousticSHMLoudness import acousticSHMLoudnessFromComponent
+from .shmRoughnessECMA import shmRoughnessECMA
 
-from .acousticSHMRoughness import acousticSHMRoughness
-
-from .acousticSHMSubs import (shmDimensional, shmResample, shmPreProc,
-                              shmOutMidEarFilter, shmAuditoryFiltBank,
-                              shmSignalSegment, shmSignalSegmentBlocks,
-                              shmBasisLoudness, shmDownsample,
-                              shmNoiseRedLowPass, shmRoughLowPass,
-                              shmRoughWeight, shmRound, shmRMS)
+__all__ = ["shmTonalityECMA",
+           "shmLoudnessECMA",
+           "shmLoudnessFromCompECMA",
+           "shmRoughnessECMA"]

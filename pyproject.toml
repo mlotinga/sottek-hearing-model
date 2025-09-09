@@ -3,8 +3,9 @@ name = "sottek-hearing-model"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
+license = "AGPL-3.0-only"
 authors = [
-    { name = "Mike Lotinga", email = "m_lotinga@yahoo.co.uk" }
+    { name = "Mike Lotinga", email = "m.j.lotinga@edu.salford.ac.uk" }
 ]
 requires-python = ">=3.11"
 dependencies = [

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # %% Preamble
 """
-acousticSHMSubs.py
+shmSubs.py
 --------------
 
 Acoustic signal analysis subfunctions for implementing the Sottek Hearing
@@ -19,13 +19,15 @@ Author: Mike JB Lotinga (m.j.lotinga@edu.salford.ac.uk)
 Institution: University of Salford
 
 Date created: 27/10/2023
-Date last modified: 23/07/2025
+Date last modified: 09/09/2025
 Python version: 3.11
 
-Copyright statement: This file and code is part of work undertaken within
-the RefMap project (www.refmap.eu), and is subject to licence as detailed
-in the code repository
-(https://github.com/acoustics-code-salford/refmap-psychoacoustics)
+Copyright statements: This file is based on code developed within the refmap-psychoacoustics
+repository (https://github.com/acoustics-code-salford/refmap-psychoacoustics),
+and as such is subject to copyleft licensing as detailed in the code repository
+(https://github.com/acoustics-code-salford/sottek-hearing-model).
+
+The code has been modified to omit unnecessary lines.
 
 As per the licensing information, please be aware that this code is WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
@@ -33,11 +35,8 @@ PARTICULAR PURPOSE.
 
 Parts of this code were developed from an original MATLAB file
 'SottekTonality.m' authored by Matt Torjussen (14/02/2022), based on
-implementing ECMA-418-2:2020. The original code has been reused and translated
-here with permission.
-
-Checked by:
-Date last checked:
+implementing ECMA-418-2:2020. The original code has been reused and translated 
+with permission.
 
 """
 
@@ -405,10 +404,6 @@ def shmOutMidEarFilter(signal, soundField='freeFrontal', outPlot=False):
     Date last checked:
 
     """
-    # Arguments validation
-    if not isinstance(outPlot, bool):
-        raise ValueError("\nInput argument 'outplot' must be logical True/False")
-
     # Signal processing
 
     # Apply outer & middle ear filter bank
@@ -1206,3 +1201,113 @@ def shmRMS(vals, axis=0, keepdims=False):
         raise TypeError
 
     return np.sqrt(np.mean(np.square(vals), axis=axis, keepdims=keepdims))
+
+
+# %% shmInCheck
+def shmInCheck(signal, sampleRateIn, axisN, soundField,
+               waitBar, outPlot, binaural=None):
+    """
+    Input checking and error handling function.
+
+    Inputs
+    ------
+
+    signal : 1D or 2D array
+             the input signal as single mono or stereo audio (sound
+             pressure) signals
+
+    sampleRateIn : integer
+                   the sample rate (frequency) of the input signal(s)
+
+    axisN : integer (0 or 1, default: 0)
+            the time axis along which to calculate the loudness
+
+    soundField : keyword string (default: 'freeFrontal')
+                 determines whether the 'freeFrontal' or 'diffuse' field stages
+                 are applied in the outer-middle ear filter, or 'noOuter' uses
+                 only the middle ear stage, or 'noEar' omits ear filtering.
+                 Note: these last two options are beyond the scope of the
+                 standard, but may be useful if recordings made using
+                 artificial outer/middle ear are to be processed using the
+                 specific recorded responses.
+
+    waitBar : keyword string (default: True)
+              determines whether a progress bar displays during processing
+              (set waitBar to false for doing multi-file parallel calculations)
+
+    outPlot : Boolean (default: False)
+              flag indicating whether to generate a figure from the output
+              (set outplot to false for doing multi-file parallel calculations)
+
+    binaural : None or Boolean (default: True)
+               flag indicating whether to output combined binaural loudness for
+               stereo input signal. If None, this variable will not be checked.
+
+    Returns
+    -------
+    signal : 1D or 2D array
+             the input signal as single mono or stereo audio (sound
+             pressure) signals, orientated to ensure time is on the first axis
+    chansIn : integer
+              the number of input channels
+    chans : list of strings
+            text labels indicating the input signal channels
+
+    """
+
+    # Check input is an array and try casting to array if not
+    if type(signal) is np.ndarray:
+        pass
+    else:
+        try:
+            signal = np.array(signal)
+        except TypeError:
+            raise TypeError("\nInput signal must be an array-like object.")
+
+    # Check signal dimensions and add axis if 1D input
+    if signal.ndim == 1:
+        chansIn = 1
+        signal = shmDimensional(signal)
+    else:
+        chansIn = signal.shape[1]
+
+    # Check the channel number of the input data
+    if signal.shape[1] > 2:
+        raise ValueError("\nInput signal comprises more than two channels")
+
+    # assign channel labels
+    if chansIn > 1:
+        chans = ["Stereo left",
+                 "Stereo right"]
+    else:
+        chans = ["Mono"]
+
+    # Orient input signal
+    if axisN in [0, 1]:
+        if axisN == 1:
+            signal = signal.T
+    else:
+        raise ValueError("\nInput axisN must be an integer 0 or 1")
+
+    # Check the length of the input data (must be longer than 300 ms)
+    if signal.shape[0] <= 300/1000*sampleRateIn:
+        raise ValueError("\nInput signal is too short along the specified axis (must be longer than 300 ms)")
+
+    # Check if soundField has a valid value
+    try:
+        soundFieldIn = soundField.lower()
+    except TypeError:
+        raise TypeError("\nInput argument 'soundField' must be a keyword string. Options include: 'freeFrontal', 'diffuse' or 'noOuter'.")
+        if soundFieldIn not in ['freefrontal', 'diffuse', 'noouter']:
+            raise ValueError("\nInput argument 'soundField' must be one of the options: 'freeFrontal', 'diffuse' or 'noOuter'.")
+
+    # Check if outPlot has a valid value
+    if not isinstance(outPlot, bool):
+        raise ValueError("\nInput argument 'outplot' must be logical True/False")
+
+    # Check if binaural has a valid value
+    if binaural is not None:
+        if not isinstance(binaural, bool):
+            raise ValueError("\nInput argument 'binaural' must be logical True/False")
+
+    return signal, chansIn, chans

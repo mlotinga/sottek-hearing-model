@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-filterFuncs.py
+filters.py
 ------------
 
 Filter functions:
@@ -17,27 +17,29 @@ Ownership and Quality Assurance
 Author: Mike JB Lotinga (m.j.lotinga@edu.salford.ac.uk)
 Institution: University of Salford
 
-Date created: 03/09/2025
+Date created: 22/01/2024
 Date last modified: 03/09/2025
 Python version: 3.11
 
 Copyright statements: This file is based on code developed within the refmap-psychoacoustics
 repository (https://github.com/acoustics-code-salford/refmap-psychoacoustics),
 and as such is subject to copyleft licensing as detailed in the code repository
-(https://github.com/acoustics-code-salford/refmap-psychoacoustics).
+(https://github.com/acoustics-code-salford/sottek-hearing-model).
 
 The code has been modified to omit unnecessary lines.
+
+As per the licensing information, please be aware that this code is WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE.
 
 """
 
 import numpy as np
-from scipy.signal import (bilinear, freqz, lfilter, lfilter_zi,
-                          resample_poly)
-from src.py.dsp.noct import noctf
+from scipy.signal import (bilinear, lfilter, lfilter_zi, resample_poly)
 from math import gcd
 
 
-def A_weight_T(x, fs, axis=0, check=False):
+def A_weight_T(x, fs, axis=0):
     """
     Return time-domain-filtered signal according to standard sound frequency
     weighting 'A'.
@@ -60,17 +62,11 @@ def A_weight_T(x, fs, axis=0, check=False):
          the sampling frequency of the signals to be processed
     axis : integer
            the signal array axis along which to apply the filter
-    check : boolean
-            flag to check the filter against IEC acceptance limits
 
     Returns
     -------
     y : 1D or 2D array
         contains the weighted (filtered) time signals
-    f : 1D array
-        contains the frequencies (Hz) of the filter frequency response function
-    H : 1D array
-        contains the complex frequency response function values for each f
 
     Requirements
     ------------
@@ -139,28 +135,6 @@ def A_weight_T(x, fs, axis=0, check=False):
         zi = lfilter_zi(b, a)
     else:
         zi = lfilter_zi(b, a)[:, None]
-
-    if check:
-        # Check filter spec against acceptance limits
-        f, H = freqz(b, a, worN=15000, fs=fsu)
-        f = f[1:]  # discards zero-frequency
-        H = H[1:]  # discards zero-frequency
-
-        # IEC 61672-1:2013 acceptance limits (class 1)
-        fm, _, _ = noctf(10, 20000, 3)
-        Lm = np.array([-70.4, -63.4, -56.7, -50.5, -44.7, -39.4, -34.6, -30.2,
-                      -26.2, -22.5, -19.1, -16.1, -13.4, -10.9, -8.6, -6.6, -4.8,
-                      -3.2, -1.9, -0.8, 0.0, 0.6, 1.0, 1.2, 1.3, 1.2, 1.0, 0.5,
-                      -0.1, -1.1, -2.5, -4.3, -6.6, -9.3])
-        Ll = np.array([-9999.0, -9999.0, -4.0, -2.0, -1.5, -1.5, -1, -1, -1, -1,
-                      -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -0.7, -1, -1, -1,
-                      -1, -1, -1, -1.5, -2, -2.5, -3, -5, -16, -9999]) + Lm
-        Lu = np.array([3.0, 2.5, 2.0, 2.0, 2.0, 1.5, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                      1, 1, 1, 1, 0.7, 1, 1, 1, 1, 1, 1, 1.5, 1.5, 1.5, 2, 2, 2.5,
-                      3]) + Lm
-        Lmf = np.interp(f, fm, Lm)  # Interpolate Lm onto f axis
-        Luf = np.interp(f, fm, Lu)  # Interpolate Lu onto f axis
-        Llf = np.interp(f, fm, Ll)  # Interpolate Lu onto f axis
 
     # Filter data on upsampled version
 
