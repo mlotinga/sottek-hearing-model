@@ -792,7 +792,7 @@ def shmRoughnessECMA(p, sampleRateIn, axisN=0, soundField='freeFrontal',
 
             ax2 = axs[1]
             ax2.plot(timeOut, roughness90Pc[chan]*np.ones(timeOut.size),
-                     color=cmap_inferno(33/255), linewidth=1,
+                     color=cmap_inferno(33/255), linewidth=1, linestyle='dotted',
                      label=("90th-" + "\n" + "percentile"))
             ax2.plot(timeOut, roughnessTDep[:, chan],
                      color=cmap_inferno(165/255),
@@ -842,7 +842,7 @@ def shmRoughnessECMA(p, sampleRateIn, axisN=0, soundField='freeFrontal',
 
     # Assign outputs to structure
     if chansOut == 3:
-        roughnessSHM = dict()
+        roughnessSHM = {}
         roughnessSHM.update({'specRoughness': specRoughness[:, :, 0:2]})
         roughnessSHM.update({'specRoughnessAvg': specRoughnessAvg[:, 0:2]})
         roughnessSHM.update({'roughnessTDep': roughnessTDep[:, 0:2]})

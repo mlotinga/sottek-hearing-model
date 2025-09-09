@@ -328,7 +328,7 @@ def shmLoudnessECMA(p, sampleRateIn, axisN=0, soundField='freeFrontal',
 
             ax2 = axs[1]
             ax2.plot(timeOut, loudnessPowAvg[chan]*np.ones(timeOut.size),
-                     color=cmap_viridis(33/255), linewidth=1,
+                     color=cmap_viridis(33/255), linewidth=1, linestyle='dotted',
                      label=("Time-" + "\n" + "average"))
             ax2.plot(timeOut, loudnessTDep[:, chan],
                      color=cmap_viridis(165/255),
@@ -380,7 +380,7 @@ def shmLoudnessECMA(p, sampleRateIn, axisN=0, soundField='freeFrontal',
 
     # Assign outputs to structure
     if chansOut == 3:
-        loudnessSHM = dict()
+        loudnessSHM = {}
         loudnessSHM.update({'specLoudness': specLoudness[:, :, 0:2]})
         loudnessSHM.update({'specTonalLoudness': specTonalLoudness[:, :, 0:2]})
         loudnessSHM.update({'specNoiseLoudness': specNoiseLoudness[:, :, 0:2]})
@@ -657,7 +657,7 @@ def shmLoudnessECMAFromComp(specTonalLoudness, specNoiseLoudness,
 
             ax2 = axs[1]
             ax2.plot(timeOut, loudnessPowAvg[chan]*np.ones(timeOut.size),
-                     color=cmap_viridis(33/255), linewidth=1,
+                     color=cmap_viridis(33/255), linewidth=1, linestyle='dotted',
                      label=("Time-" + "\n" + "average"))
             ax2.plot(timeOut, loudnessTDep[:, chan],
                      color=cmap_viridis(165/255),
@@ -687,7 +687,7 @@ def shmLoudnessECMAFromComp(specTonalLoudness, specNoiseLoudness,
 
     # Assign outputs to structure
     if chansOut == 3:
-        loudnessSHM = dict()
+        loudnessSHM = {}
         loudnessSHM.update({'specLoudness': specLoudness[:, :, 0:2]})
         loudnessSHM.update({'specLoudnessPowAvg': specLoudnessPowAvg[:, 0:2]})
         loudnessSHM.update({'loudnessTDep': loudnessTDep[:, 0:2]})

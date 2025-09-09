@@ -76,7 +76,7 @@ plt.rc('figure', titlesize=24)  # fontsize of the figure title
 
 # %% shmTonalityECMA
 def shmTonalityECMA(p, sampleRateIn, axisN=0, soundField='freeFrontal',
-                        waitBar=True, outPlot=False):
+                    waitBar=True, outPlot=False):
     """
     Inputs
     ------
@@ -637,7 +637,7 @@ def shmTonalityECMA(p, sampleRateIn, axisN=0, soundField='freeFrontal',
 
             ax2 = axs[1]
             ax2.plot(timeOut, tonalityAvg[chan]*np.ones(timeOut.size),
-                     color=cmap_plasma(33/255), linewidth=1,
+                     color=cmap_plasma(33/255), linewidth=1, linestyle='dotted',
                      label=("Time-" + "\n" + "average"))
             ax2.plot(timeOut, tonalityTDep[:, chan],
                      color=cmap_plasma(165/255),
@@ -673,7 +673,7 @@ def shmTonalityECMA(p, sampleRateIn, axisN=0, soundField='freeFrontal',
     # end of if branch for singleton dimensions
 
     # Assign outputs to structure
-    tonalitySHM = dict()
+    tonalitySHM = {}
     tonalitySHM.update({'specTonality': specTonality})
     tonalitySHM.update({'specTonalityAvg': specTonalityAvg})
     tonalitySHM.update({'specTonalityFreqs': specTonalityFreqs})
