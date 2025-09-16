@@ -21,15 +21,14 @@ Author: Mike JB Lotinga (m.j.lotinga@edu.salford.ac.uk)
 Institution: University of Salford
 
 Date created: 29/05/2023
-Date last modified: 09/09/2025
+Date last modified: 16/09/2025
 Python version: 3.11
 
-Copyright statements: This file is based on code developed within the refmap-psychoacoustics
-repository (https://github.com/acoustics-code-salford/refmap-psychoacoustics),
+Copyright statement: This code has been devloped during work undertaken within
+the RefMap project (www.refmap.eu), based on the RefMap code repository
+(https://github.com/acoustics-code-salford/refmap-psychoacoustics),
 and as such is subject to copyleft licensing as detailed in the code repository
 (https://github.com/acoustics-code-salford/sottek-hearing-model).
-
-The code has been modified to omit unnecessary lines.
 
 As per the licensing information, please be aware that this code is WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
@@ -37,16 +36,17 @@ PARTICULAR PURPOSE.
 
 Parts of this code were developed from an original MATLAB file
 'SottekTonality.m' authored by Matt Torjussen (14/02/2022), based on
-implementing ECMA-418-2:2020. The original code has been reused and translated 
-with permission.
+implementing ECMA-418-2:2020. The original code has been reused and translated
+here with permission.
 
 """
 
 # %% Import block
 import numpy as np
 from numpy.lib.stride_tricks import sliding_window_view
-from matplotlib import pyplot as plt
 import matplotlib as mpl
+mpl.use('QtAgg')
+from matplotlib import pyplot as plt
 from scipy.fft import (fft)
 from scipy.signal import (hilbert, windows, find_peaks)
 from scipy.interpolate import PchipInterpolator
@@ -303,7 +303,7 @@ def shmRoughnessECMA(p, sampleRateIn, axisN=0, soundField='freeFrontal',
     else:
         chanIter = range(chansIn)
 
-    specRoughness = np.zeros([l_50Last, nBands, chansOut])
+    specRoughness = np.zeros([l_50Last, nBands, chansOut], order='F')
     for chan in chanIter:
         # Apply auditory filter bank
         # --------------------------
@@ -324,11 +324,11 @@ def shmRoughnessECMA(p, sampleRateIn, axisN=0, soundField='freeFrontal',
         i_start = 0  # index to start segmentation block processing from
         _, nBlocks, _ = shmSignalSegmentBlocks(pn_omz[:, 0],
                                                blockSize=blockSize,
-                                               overlap=overlap, axisN=0,
+                                               overlap=overlap,
                                                i_start=i_start,
                                                endShrink=True)
-        basisLoudness = np.zeros([nBlocks, nBands])
-        envelopes = np.zeros([blockSize1500, nBlocks, nBands])
+        basisLoudness = np.zeros([nBlocks, nBands], order='F')
+        envelopes = np.zeros([blockSize1500, nBlocks, nBands], order='F')
         for zBand in envIter:
             # Segmentation into blocks
             # ------------------------
@@ -336,7 +336,7 @@ def shmRoughnessECMA(p, sampleRateIn, axisN=0, soundField='freeFrontal',
             # Section 5.1.5 ECMA-418-2:2025
             pn_lz, lBlocksOut = shmSignalSegment(pn_omz[:, zBand],
                                                  blockSize=blockSize,
-                                                 overlap=overlap, axisN=0,
+                                                 overlap=overlap,
                                                  i_start=i_start,
                                                  endShrink=True)
 
@@ -354,7 +354,7 @@ def shmRoughnessECMA(p, sampleRateIn, axisN=0, soundField='freeFrontal',
             # [p(ntilde)_E,l,z]
             envelopes[:, :, zBand] = shmDownsample(np.abs(hilbert(pn_lz,
                                                                   axis=0)),
-                                                   axisN=0, downSample=32)
+                                                   downSample=32)
 
         # end of for loop for obtaining low frequency signal envelopes
 
@@ -362,17 +362,20 @@ def shmRoughnessECMA(p, sampleRateIn, axisN=0, soundField='freeFrontal',
         # parallelised approach can continue
 
         # Section 7.1.3 equation 66 ECMA-418-2:2025 [Phi(k)_E,l,z]
-        modSpectra = np.zeros(envelopes.shape)
+        modSpectra = np.zeros(envelopes.shape, order='F')
         envelopeWin = envelopes*np.tile(shmDimensional(windows.hann(blockSize1500,
                                                                     sym=False),
                                                        targetDim=3),
                                         reps=[1, envelopes.shape[1],
                                               nBands])/np.sqrt(0.375)
+        envelopeWin = np.asfortranarray(envelopeWin)
+
         # Equation 66 & 67
         denom = shmDimensional(np.max(basisLoudness, 1))*np.sum(envelopeWin**2,
                                                                 0)
         mask = denom != 0  # Equation 66 criteria for masking
-        maskRep = np.broadcast_to(mask, modSpectra.shape)  # broadcast mask
+        # broadcast mask
+        maskRep = np.asfortranarray(np.broadcast_to(mask, modSpectra.shape))
         scaling = np.divide(basisLoudness**2, denom, out=np.zeros_like(denom),
                             where=mask)  # Equation 66 factor
         # broadcast scaling
@@ -411,7 +414,8 @@ def shmRoughnessECMA(p, sampleRateIn, axisN=0, soundField='freeFrontal',
                                                   1)))
 
         # Equation 70 ECMA-418-2:2025 [w(l,k)]
-        weightingFactor1 = np.zeros(modSpectraAvgSum[0:257, :].shape)
+        weightingFactor1 = np.zeros(modSpectraAvgSum[0:257, :].shape,
+                                    order='F')
         mask = clipWeight >= 0.05*np.max(clipWeight[2:256, :], axis=0)
         weightingFactor1[mask] = np.minimum(np.maximum(clipWeight[mask]
                                                        - 0.1407, 0), 1)
@@ -431,8 +435,8 @@ def shmRoughnessECMA(p, sampleRateIn, axisN=0, soundField='freeFrontal',
         # theta used in equation 79, including additional index for
         # errorCorrection terms from table 10
         theta = np.arange(34)
-        modAmp = np.zeros([10, nBlocks, nBands])
-        modRate = np.zeros([10, nBlocks, nBands])
+        modAmp = np.zeros([10, nBlocks, nBands], order='F')
+        modRate = np.zeros([10, nBlocks, nBands], order='F')
 
         if waitBar:
             rateIter = tqdm(range(nBands),
@@ -563,8 +567,8 @@ def shmRoughnessECMA(p, sampleRateIn, axisN=0, soundField='freeFrontal',
         # Section 7.1.5.3 ECMA-418-2:2025 - Estimation of fundamental modulation rate
         # TODO: replace the loop approach with a parallelised approach!
         # matrix initialisation to ensure zero rates do not cause missing bands in output
-        modFundRate = np.zeros([nBlocks, nBands])
-        modMaxWeight = np.zeros([10, nBlocks, nBands])
+        modFundRate = np.zeros([nBlocks, nBands], order='F')
+        modMaxWeight = np.zeros([10, nBlocks, nBands], order='F')
 
         if waitBar:
             rateIter = tqdm(range(nBands),
@@ -692,7 +696,7 @@ def shmRoughnessECMA(p, sampleRateIn, axisN=0, soundField='freeFrontal',
         t50 = np.linspace(0, signalT, l_50Last)
         # TODO: check the 2025 version redefinition of t(l) makes sense
 
-        specRoughEst = np.zeros([l_50Last, nBands])
+        specRoughEst = np.zeros([l_50Last, nBands], order='F')
         for zBand in range(nBands):
             interpolator = PchipInterpolator(t, modAmpMax[:, zBand], axis=0)
             specRoughEst[:, zBand] = interpolator(t50)

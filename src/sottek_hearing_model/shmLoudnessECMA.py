@@ -25,23 +25,16 @@ Author: Mike JB Lotinga (m.j.lotinga@edu.salford.ac.uk)
 Institution: University of Salford
 
 Date created: 29/05/2023
-Date last modified: 09/09/2025
+Date last modified: 16/09/2025
 Python version: 3.11
 
-Copyright statement: This file and code is part of work undertaken within
-the RefMap project (www.refmap.eu), and is subject to licence as detailed
-in the code repository
-(https://github.com/acoustics-code-salford/refmap-psychoacoustics)
-
-As per the licensing information, please be aware that this code is WITHOUT ANY
-WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
-PARTICULAR PURPOSE.
-Copyright statements: This file is based on code developed within the refmap-psychoacoustics
-repository (https://github.com/acoustics-code-salford/refmap-psychoacoustics),
+Copyright statement: This code has been devloped during work undertaken within
+the RefMap project (www.refmap.eu), based on the RefMap code repository
+(https://github.com/acoustics-code-salford/refmap-psychoacoustics),
 and as such is subject to copyleft licensing as detailed in the code repository
 (https://github.com/acoustics-code-salford/sottek-hearing-model).
 
-The code has been modified to omit unnecessary lines.
+The code has been modified to amend imports or omit unnecessary lines.
 
 As per the licensing information, please be aware that this code is WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
@@ -51,11 +44,12 @@ PARTICULAR PURPOSE.
 
 # %% Import block
 import numpy as np
-from matplotlib import pyplot as plt
 import matplotlib as mpl
+mpl.use('QtAgg')
+from matplotlib import pyplot as plt
 from sottek_hearing_model.shmSubs import (shmResample,
-                                          shmDimensional, shmRMS, shmRound,
-                                          shmInCheck)
+                                          shmDimensional, shmRMS,
+                                          shmRound, shmInCheck)
 from sottek_hearing_model.shmTonalityECMA import shmTonalityECMA
 from sottek_hearing_model.filters import A_weight_T
 
@@ -75,7 +69,7 @@ plt.rc('figure', titlesize=20)  # fontsize of the figure title
 
 # %% shmLoudnessECMA
 def shmLoudnessECMA(p, sampleRateIn, axisN=0, soundField='freeFrontal',
-                        waitBar=True, outPlot=False, binaural=True):
+                    waitBar=True, outPlot=False, binaural=True):
     """
     Inputs
     ------
@@ -236,7 +230,8 @@ def shmLoudnessECMA(p, sampleRateIn, axisN=0, soundField='freeFrontal',
 
     # Section 8.1.1 ECMA-418-2:2025
     # Weight and combine component specific loudnesses
-    specLoudness = np.zeros(specTonalLoudness.shape)  # pre-allocate array
+    # pre-allocate array
+    specLoudness = np.zeros(specTonalLoudness.shape, order='F')
     for chan in range(chansIn):
         # Equation 114 ECMA-418-2:2025 [e(z)]
         maxLoudnessFuncel = a/(np.max(specTonalLoudness[:, :, chan]
@@ -409,7 +404,7 @@ def shmLoudnessECMA(p, sampleRateIn, axisN=0, soundField='freeFrontal',
 
     return loudnessSHM
 
-# end of shmLoudnessECMA function
+# end of acousticSHMLoudness function
 
 
 # %% shmLoudnessECMAFromComp
@@ -564,7 +559,7 @@ def shmLoudnessECMAFromComp(specTonalLoudness, specNoiseLoudness,
 
     # Section 8.1.1 ECMA-418-2:2025
     # Weight and combine component specific loudnesses
-    specLoudness = np.zeros(specTonalLoudness.shape)  # pre-allocate array
+    specLoudness = np.zeros(specTonalLoudness.shape, order='F')  # pre-allocate array
     for chan in range(chansIn):
         # Equation 114 ECMA-418-2:2025 [e(z)]
         maxLoudnessFuncel = a/(np.max(specTonalLoudness[:, :, chan]

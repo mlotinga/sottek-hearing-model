@@ -1,7 +1,7 @@
 [project]
 name = "sottek-hearing-model"
 version = "0.1.0"
-description = "Add your description here"
+description = "Implements algorithsm from the Sottek Hearing Model"
 readme = "README.md"
 license = "AGPL-3.0-only"
 authors = [
@@ -9,16 +9,15 @@ authors = [
 ]
 requires-python = ">=3.11"
 dependencies = [
-    "bottleneck>=1.5.0",
+    "bottleneck>=1.6.0",
     "matplotlib>=3.10.6",
-    "numpy>=2.3.2",
-    "scipy>=1.16.1",
+    "numba>=0.61.2",
+    "numpy>=2.2.6",
+    "pyqt6>=6.9.1",
+    "scipy>=1.16.2",
     "tqdm>=4.67.1",
 ]
 
-[project.scripts]
-sottek-hearing-model = "sottek_hearing_model:main"
-
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["uv_build>=0.8.17,<0.9.0"]
+build-backend = "uv_build"
