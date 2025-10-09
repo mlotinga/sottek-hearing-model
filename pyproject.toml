@@ -21,3 +21,12 @@ dependencies = [
 [build-system]
 requires = ["uv_build>=0.8.17,<0.9.0"]
 build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "ipykernel>=6.30.1",
+    "ipython>=9.6.0",
+    "pip>=25.2",
+    "pytest>=8.4.2",
+    "pytest-cov>=7.0.0",
+]

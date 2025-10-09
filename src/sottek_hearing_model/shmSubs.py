@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # %% Preamble
 """
-acousticSHMSubs.py
+shmSubs.py
 --------------
 
 Acoustic signal analysis subfunctions for implementing the Sottek Hearing
@@ -12,6 +12,7 @@ Requirements
 numpy
 scipy
 matplotlib
+bottleneck
 
 Ownership and Quality Assurance
 -------------------------------
@@ -19,7 +20,7 @@ Author: Mike JB Lotinga (m.j.lotinga@edu.salford.ac.uk)
 Institution: University of Salford
 
 Date created: 27/10/2023
-Date last modified: 16/09/2025
+Date last modified: 08/10/2025
 Python version: 3.11
 
 Copyright statement: This code has been devloped during work undertaken within
@@ -50,6 +51,7 @@ import matplotlib.ticker as ticker
 from scipy.signal import (freqz, lfilter, resample_poly, sosfilt, sosfreqz)
 from scipy.special import (comb)
 from math import gcd
+import bottleneck as bn
 from numba import njit
 
 # set plot parameters
@@ -62,7 +64,8 @@ mpl.rcParams['figure.autolayout'] = True
 
 # %% shmAuditoryFiltBank
 def shmAuditoryFiltBank(signal, outPlot=False):
-    """Function signalFiltered = shmAuditoryFiltBank(signal, outplot)
+    """
+    Function signalFiltered = shmAuditoryFiltBank(signal, outplot)
 
     Returns a set of signals, bandpass filtered for the inner ear response
     in each half-Bark critical band rate scale width, according to
@@ -197,9 +200,9 @@ def shmAuditoryFiltBank(signal, outPlot=False):
 
 
 # %% shmBasisLoudness
-@njit
 def shmBasisLoudness(signalSegmented, bandCentreFreq=None):
-    """Function shmBandBasisLoudness(signalSegmented, bandCentreFreq)
+    """
+    Function shmBasisLoudness(signalSegmented, bandCentreFreq)
 
     Returns rectified input and basis loudness in specified half-Bark
     critical band according to ECMA-418-2:2025 (the Sottek Hearing Model)
@@ -891,7 +894,6 @@ def shmSignalSegment(signal, blockSize, overlap=0, i_start=0,
 
 
 # %% shmDownsample
-@njit
 def shmDownsample(ndArray, downSample=32):
     """
     Return array downsampled by keeping every value at downSample indices
@@ -979,7 +981,6 @@ def shmDimensional(ndArray, targetDim=2, where='last'):
 
 
 # %% shmRoughWeight
-@njit
 def shmRoughWeight(modRate, modfreqMaxWeight, roughWeightParams):
     """
     Returns roughness weighting for high- and low-frequency (modulation
@@ -1025,7 +1026,6 @@ def shmRoughWeight(modRate, modfreqMaxWeight, roughWeightParams):
 
 
 # %% shmRoughLowPass
-@njit
 def shmRoughLowPass(specRoughEstTform, sampleRate, riseTime, fallTime):
     """
     specRoughness = shmRoughLowPass(specRoughEstTform, sampleRate, riseTime,
@@ -1085,7 +1085,6 @@ def shmRoughLowPass(specRoughEstTform, sampleRate, riseTime, fallTime):
 
 
 # %% shmRound
-@njit
 def shmRound(vals, decimals=0):
     """
     Returns a set of rounded values to the specified number of decimal places
@@ -1107,17 +1106,10 @@ def shmRound(vals, decimals=0):
           The rounded values.
 
     """
-
-    try:
-        vals = np.asarray(vals)
-    except TypeError:
-        raise TypeError
-
     return np.round(vals + 10**(-vals.astype(str).size - 1), decimals)
 
 
 # %% shmRMS
-@njit
 def shmRMS(vals, axis=0, keepdims=False):
     """
     Returns the root-mean-square for values contained in an array.
@@ -1152,10 +1144,11 @@ def shmRMS(vals, axis=0, keepdims=False):
 
 
 # %% shmInCheck
-@njit
 def shmInCheck(signal, sampleRateIn, axisN, soundField,
                waitBar, outPlot, binaural=None):
-    """
+    """shmInCheck(signal, sampleRateIn, axisN, soundField,
+                  waitBar, outPlot, binaural=None)
+
     Input checking and error handling function.
 
     Inputs
@@ -1267,3 +1260,275 @@ def shmInCheck(signal, sampleRateIn, axisN, soundField,
             raise ValueError("\nInput argument 'binaural' must be logical True/False")
 
     return signal, chansIn, chans
+
+
+def shmCritBandAutoCorrelation(zBand, bandCentreFreqs, blockSizeBands, overlap, signalBands):
+    """shmCritBandAutoCorrelation(zBand, bandCentreFreqs, blockSizeBands, overlap, signalBands)
+
+    Returns the critical band autocorrelation estimate.
+
+    Inputs
+    ------
+    zBand : integer
+            the input critical band index
+    bandCentreFreqs : array of floats
+                      the centre frequencies of the critical bands
+    blockSizeBands : array of integers
+                     the block size in samples for each critical band
+    overlap : float
+              the proportion of overlap
+    signalBands : 2D array
+                  the input critical bandpass-filtered signals
+
+    Returns
+    -------
+    zBand : integer
+            the input critical band index as output
+    unbiasedNormBandACF : 2D array
+                          unbiased and normalised estimate of the autocorrelation
+                          function in the corresponding critical band
+
+    """
+
+    # %% Define constants
+    epsilon = 1e-12  # Footnote 14 (/0 epsilon)
+    
+
+    # %% Signal processing
+
+    blockSize = blockSizeBands[zBand]
+
+    # Segmentation into blocks
+    # ------------------------
+    # Section 5.1.5 ECMA-418-2:2025
+    i_start = blockSizeBands[0] - blockSize
+    signalSeg, _ = shmSignalSegment(signalBands[:, zBand],
+                                    blockSize=blockSize,
+                                    overlap=overlap,
+                                    i_start=i_start)
+
+    # Transformation into Loudness
+    # ----------------------------
+    # Sections 5.1.6 to 5.1.9 ECMA-418-2:2025 [N'_basis(z)]
+    signalRectSeg, bandBasisLoudness, _ = shmBasisLoudness(signalSegmented=signalSeg,
+                                                           bandCentreFreq=bandCentreFreqs[zBand])
+
+    # ACF implementation using DFT
+    # Section 6.2.2 Equations 27 & 28 ECMA-418-2:2025
+    # [phi_unscaled,l,z(m)]
+    unscaledACF = np.asfortranarray(np.fft.irfft(np.abs(np.fft.rfft(signalRectSeg,
+                                                                    n=2*blockSize,
+                                                                    axis=0))**2,
+                                                 n=2*blockSize,
+                                                 axis=0))
+
+    # Section 6.2.2 Equation 29 ECMA-418-2:2025 [phi_l,z(m)]
+    denom = (np.sqrt(np.flip(np.cumsum(np.flip(signalRectSeg, axis=0)**2,
+                                       axis=0), axis=0)
+                     * np.flip(np.cumsum(signalRectSeg**2, axis=0), axis=0))
+             + epsilon)
+
+    # note that the block length is used here, rather than the 2*s_b,
+    # for compatability with the remaining code - beyond 0.75*s_b is
+    # assigned (unused) zeros in the next line
+    unbiasedNormACF = unscaledACF[0:blockSize, :]/denom
+    unbiasedNormACF[int(0.75*blockSize):blockSize, :] = 0
+
+    unbiasedNormACFBand = unbiasedNormACF*bandBasisLoudness
+
+    return zBand, unbiasedNormACFBand
+# end of shmCritBandAutoCorrelation function
+
+
+@njit(parallel=True, fastmath=True)
+def shmCritBandTonalityComponents(zBand, bandCentreFreqs, blockSizeBands, lastBlock, dfz, unbiasedNormACF, i_NBandsAvg):
+    """shmCritBandTonalityComponents(zBand, bandCentreFreqs, blockSizeBands, lastBlock, dfz, unbiasedNormACF, i_NBandsAvg)
+
+    Returns the tonal loudness, noise loudness and tonality frequencies for the critical band.
+
+    Inputs
+    ------
+    zBand : integer
+            the input critical band index
+    bandCentreFreqs : array of floats
+                      the centre frequencies of the critical bands
+    blockSizeBands : array of integers
+                     the block size in samples for each critical band
+    lastBlock : integer
+                the index of the last block
+    unbiasedNormACF : 2D array
+                      the unbiased and normalised estimate of the autocorrelation
+                      function in the corresponding critical band
+    i_NBandsAvg : array of integers
+                  the indices for averaging adjacent critical bands
+
+    Returns
+    -------
+    zBand : integer
+            the input critical band index as output
+    bandTonalLoudness : 2D array
+                        the specific loudness of the tonal component in the critical band
+
+    bandNoiseLoudness : 2D array
+                        the specific loudness of the noise component in the critical band
+
+    bandTonalFreqs : 2D array
+                     the time-dependent frequencies of the tonal components in the critical band
+    """
+
+    # %% Define constants
+    epsilon = 1e-12
+
+    # Noise reduction constants from Section 6.2.7 Table 7 ECMA-418-2:2025
+    alpha = 20
+    beta = 0.07
+
+    # sample rates
+    sampleRate1875 = 187.5
+    sampleRate48k = 48e3
+
+    # largest block size
+    maxBlockSize = np.max(blockSizeBands)
+
+    # Critical band interpolation factors from Section 6.2.6 Table 6
+    # ECMA-418-2:2025 [i]
+    i_interp = blockSizeBands/np.min(blockSizeBands)
+
+    # Sigmoid function factor parameters Section 6.2.7 Table 8 ECMA-418-2:2025
+    # [c(s_b(z))]
+    csz_b = np.hstack((18.21*np.ones([3,]), 12.14*np.ones([13,]),
+                       417.54*np.ones([9,]), 962.68*np.ones([28,])))
+    # [d(s_b(z))]
+    dsz_b = np.hstack((0.36*np.ones([3,]), 0.36*np.ones([13,]),
+                       0.71*np.ones([9,]), 0.69*np.ones([28,])))
+
+
+    # %% Signal processing
+    # Averaging of frequency bands
+    meanScaledACF = np.mean(unbiasedNormACF[i_NBandsAvg[0,
+                                                        zBand]:i_NBandsAvg[1,
+                                                                           zBand]],
+                            axis=0)
+
+    # Average the ACF over adjacent time blocks [phibar_z'(m)]
+    if zBand < 16:
+        meanScaledACF = np.asfortranarray(np.roll(np.nan_to_num(bn.move_mean(meanScaledACF,
+                                                                             window=3,
+                                                                             min_count=3,
+                                                                             axis=1),
+                                                                copy=False),
+                                                  shift=-1, axis=1))
+    # end of if branch for moving mean over time blocks
+
+    # Application of ACF lag window Section 6.2.4 ECMA-418-2:2025
+    tauz_start = max(0.5/dfz[zBand], 2e-3)  # Equation 31 ECMA-418-2:2025 [tau_start(z)]
+    tauz_end = max(4/dfz[zBand], tauz_start + 1e-3)  # Equation 32 ECMA-418-2:2025 [tau_end(z)]
+    # Equations 33 & 34 ECMA-418-2:2025
+    mz_start = int(np.ceil(tauz_start*sampleRate48k) - 1)  # Starting lag window index [m_start(z)]
+    mz_end = int(np.floor(tauz_end*sampleRate48k) - 1)  # Ending lag window index [m_end(z)]
+    M = mz_end - mz_start + 1
+    # Equation 35 ECMA-418-2:2025
+    # lag-windowed, detrended ACF [phi'_z,tau(m)]
+    lagWindowACF = np.zeros(meanScaledACF.shape, order='F')
+    lagWindowACF[mz_start:mz_end + 1, :] = (meanScaledACF[mz_start:mz_end
+                                                          + 1, :]
+                                            - np.mean(meanScaledACF[mz_start:mz_end
+                                                                    + 1,
+                                                                    :],
+                                                      axis=0))
+
+    # Estimation of tonal loudness
+    # ----------------------------
+    # Section 6.2.5 Equation 36 ECMA-418-2:2025
+    # ACF spectrum in the lag window [Phi'_z,tau(k)]
+    magFFTlagWindowACF = np.abs(np.fft.fft(lagWindowACF,
+                                           n=2*maxBlockSize,
+                                           axis=0))
+
+    magFFTlagWindowACF[np.isnan(magFFTlagWindowACF, order='F')] = 0.0
+
+    # added to avoid spurious tiny results affecting tonal frequency
+    # identification
+    magFFTlagWindowACF[magFFTlagWindowACF <= epsilon] = 0.0
+
+    # Section 6.2.5 Equation 37 ECMA-418-2:2025 [Nhat'_tonal(z)]
+    # first estimation of specific loudness of tonal component in critical band
+    bandTonalLoudness = meanScaledACF[0, :].copy()
+    mask = (2*np.max(magFFTlagWindowACF, axis=0)/(M/2)
+            <= meanScaledACF[0, :])
+    bandTonalLoudness[mask] = 2*np.max(magFFTlagWindowACF[:, mask],
+                                       axis=0)/(M/2)
+
+    # Section 6.2.5 Equation 38 & 39 ECMA-418-2:2025
+    # [k_max(z)]
+    # NOTE: round is used to resolve discrepancies due to tiny floating point values at spectral line pairs
+    kz_max = np.argmax(np.round(magFFTlagWindowACF, 8), axis=0)
+    # frequency of maximum tonal component in critical band [f_ton(z)]
+    bandTonalFreqs = kz_max*(sampleRate48k/(2*maxBlockSize))
+
+    # Section 6.2.7 Equation 41 ECMA-418-2:2025 [N'_signal(l,z)]
+    # specific loudness of complete band-pass signal in critical band
+    bandLoudness = meanScaledACF[0, :].copy()
+
+    # Resampling to common time basis Section 6.2.6 ECMA-418-2:2025
+    if i_interp[zBand] > 1:
+        # Note: use of interpolation function avoids rippling caused by
+        # resample function, which otherwise affects specific loudness
+        # calculation for tonal and noise components
+        l_n = meanScaledACF.shape[1]
+        xp = np.linspace(0, l_n - 1, l_n)
+        x = np.linspace(0, l_n - 1, int(i_interp[zBand]*(l_n - 1) + 1))
+
+        bandTonalLoudness = np.interp(x, xp, bandTonalLoudness)
+        bandLoudness = np.interp(x, xp, bandLoudness)
+        bandTonalFreqs = np.interp(x, xp, bandTonalFreqs)
+
+    # end of if branch for interpolation
+
+    # Remove end zero-padded samples Section 6.2.6 ECMA-418-2:2025
+    bandTonalLoudness = bandTonalLoudness[0:lastBlock + 1]
+    bandLoudness = bandLoudness[0:lastBlock + 1]
+    bandTonalFreqs = bandTonalFreqs[0:lastBlock + 1]
+
+    # Noise reduction Section 6.2.7 ECMA-418-2:2020
+    # ---------------------------------------------
+    # Equation 42 ECMA-418-2:2025 signal-noise-ratio first approximation
+    # (ratio of tonal component loudness to non-tonal component
+    # loudness in critical band)
+    # [SNRhat(l,z)]
+    SNRlz1 = bandTonalLoudness/((bandLoudness - bandTonalLoudness)
+                                      + epsilon)
+
+    # Equation 43 ECMA-418-2:2025 low pass filtered specific loudness
+    # of non-tonal component in critical band [Ntilde'_tonal(l,z)]
+    bandTonalLoudness = shmNoiseRedLowPass(bandTonalLoudness,
+                                                sampleRate1875)
+
+    # Equation 44 ECMA-418-2:2025 lowpass filtered SNR (improved
+    # estimation)
+    # [SNRtilde(l,z)]
+    SNRlz = shmNoiseRedLowPass(SNRlz1, sampleRate1875)
+
+    # Equation 46 ECMA-418-2:2025 [g(z)]
+    gz = csz_b[zBand]/(bandCentreFreqs[zBand]**dsz_b[zBand])
+
+    # Equation 45 ECMA-418-2:2025 [nr(l,z)]
+    crit = np.exp(-alpha*((SNRlz/gz) - beta))
+    nrlz = 1 - crit  # sigmoidal weighting function
+    nrlz[crit >= 1] = 0
+
+    # Equation 47 ECMA-418-2:2025 [N'_tonal(l,z)]
+    bandTonalLoudness = nrlz*bandTonalLoudness
+
+    # Section 6.2.8 Equation 48 ECMA-418-2:2025 [N'_noise(l,z)]
+    # specific loudness of non-tonal component in critical band
+    bandNoiseLoudness = (shmNoiseRedLowPass(bandLoudness,
+                                            sampleRate1875)
+                         - bandTonalLoudness)
+
+    return (zBand,
+            bandTonalLoudness,
+            bandNoiseLoudness,
+            bandTonalFreqs)
+
+# end of shmCritBandTonalityComponents function

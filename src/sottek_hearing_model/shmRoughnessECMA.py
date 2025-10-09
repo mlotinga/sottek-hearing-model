@@ -21,7 +21,7 @@ Author: Mike JB Lotinga (m.j.lotinga@edu.salford.ac.uk)
 Institution: University of Salford
 
 Date created: 29/05/2023
-Date last modified: 16/09/2025
+Date last modified: 02/10/2025
 Python version: 3.11
 
 Copyright statement: This code has been devloped during work undertaken within
@@ -283,8 +283,8 @@ def shmRoughnessECMA(p, sampleRateIn, axisN=0, soundField='freeFrontal',
     # Input signal samples
     n_samples = p_re.shape[0]
 
-    # Section 7.1.7 Equation 103 [l_50,end]
-    l_50Last = int(np.floor(n_samples/sampleRate48k*sampleRate50) + 1)
+    # Section 7.1.7 Equation 103 [l_last]
+    l_50Last = int(np.ceil(n_samples/hopSize) + 1)
 
     # Section 5.1.2 ECMA-418-2:2025 Fade in weighting and zero-padding
     pn = shmPreProc(p_re, blockSize=blockSize, hopSize=hopSize, padStart=True,
@@ -694,7 +694,6 @@ def shmRoughnessECMA(p, sampleRateIn, axisN=0, soundField='freeFrontal',
         # Section 7.1.7 interpolation to 50 Hz sampling rate    
         t = lBlocksOut/sampleRate48k
         t50 = np.linspace(0, signalT, l_50Last)
-        # TODO: check the 2025 version redefinition of t(l) makes sense
 
         specRoughEst = np.zeros([l_50Last, nBands], order='F')
         for zBand in range(nBands):
@@ -830,7 +829,7 @@ def shmRoughnessECMA(p, sampleRateIn, axisN=0, soundField='freeFrontal',
 
             fig.suptitle(t=(chan_lab + " signal sound pressure level = " +
                             str(shmRound(LAeq, 1)) +
-                            r"dB $\mathregular{\mathit{L}_{Aeq}}$"))
+                            r" dB $\mathregular{\mathit{L}_{Aeq}}$"))
             fig.show()
         # end of for loop over channels
     # end of if branch for plotting
@@ -845,8 +844,8 @@ def shmRoughnessECMA(p, sampleRateIn, axisN=0, soundField='freeFrontal',
     # end of if branch for singleton dimensions
 
     # Assign outputs to structure
+    roughnessSHM = {}
     if chansOut == 3:
-        roughnessSHM = {}
         roughnessSHM.update({'specRoughness': specRoughness[:, :, 0:2]})
         roughnessSHM.update({'specRoughnessAvg': specRoughnessAvg[:, 0:2]})
         roughnessSHM.update({'roughnessTDep': roughnessTDep[:, 0:2]})

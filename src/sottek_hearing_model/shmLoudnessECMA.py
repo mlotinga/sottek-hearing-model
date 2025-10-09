@@ -25,7 +25,7 @@ Author: Mike JB Lotinga (m.j.lotinga@edu.salford.ac.uk)
 Institution: University of Salford
 
 Date created: 29/05/2023
-Date last modified: 16/09/2025
+Date last modified: 09/10/2025
 Python version: 3.11
 
 Copyright statement: This code has been devloped during work undertaken within
@@ -195,7 +195,7 @@ def shmLoudnessECMA(p, sampleRateIn, axisN=0, soundField='freeFrontal',
 
     # Output sample rate based on tonality hop sizes (Section 6.2.6
     # ECMA-418-2:2025) [r_sd]
-    sampleRate1875 = 48e3/256
+    sampleRate1875 = sampleRate48k/256
 
     # Footnote 14 (/0 epsilon)
     epsilon = 1e-12
@@ -241,8 +241,8 @@ def shmLoudnessECMA(p, sampleRateIn, axisN=0, soundField='freeFrontal',
         # Equation 113 ECMA-418-2:2025 [N'(l,z)]
         specLoudness[:, :, chan] = (specTonalLoudness[:, :,
                                                       chan]**maxLoudnessFuncel
-                                    + np.abs((weight_n*specNoiseLoudness[:, :, chan])
-                                             ** maxLoudnessFuncel))**(1/maxLoudnessFuncel)
+                                    + weight_n*specNoiseLoudness[:, :, chan]
+                                    ** maxLoudnessFuncel)**(1/maxLoudnessFuncel)
     # end of loudness for loop over channels
 
     if chansIn == 2 and binaural:
@@ -357,7 +357,7 @@ def shmLoudnessECMA(p, sampleRateIn, axisN=0, soundField='freeFrontal',
 
             fig.suptitle(t=(chan_lab + " signal sound pressure level = " +
                             str(shmRound(LAeq, 1)) +
-                            r"dB $\mathregular{\mathit{L}_{Aeq}}$"))
+                            r" dB $\mathregular{\mathit{L}_{Aeq}}$"))
             fig.show()
         # end of for loop over channels
     # end of if branch for plotting
@@ -374,8 +374,8 @@ def shmLoudnessECMA(p, sampleRateIn, axisN=0, soundField='freeFrontal',
     # end of if branch for singleton dimensions
 
     # Assign outputs to structure
+    loudnessSHM = {}
     if chansOut == 3:
-        loudnessSHM = {}
         loudnessSHM.update({'specLoudness': specLoudness[:, :, 0:2]})
         loudnessSHM.update({'specTonalLoudness': specTonalLoudness[:, :, 0:2]})
         loudnessSHM.update({'specNoiseLoudness': specNoiseLoudness[:, :, 0:2]})
@@ -550,7 +550,7 @@ def shmLoudnessECMAFromComp(specTonalLoudness, specNoiseLoudness,
 
     # Output sample rate based on tonality hop sizes (Section 6.2.6
     # ECMA-418-2:2025) [r_sd]
-    sampleRate1875 = 48e3/256
+    sampleRate1875 = sampleRate48k/256
 
     # Footnote 14 (/0 epsilon)
     epsilon = 1e-12
@@ -567,11 +567,11 @@ def shmLoudnessECMAFromComp(specTonalLoudness, specNoiseLoudness,
                                + epsilon) + b
         maxLoudnessFuncel = shmDimensional(maxLoudnessFuncel)
         # Equation 113 ECMA-418-2:2025 [N'(l,z)]
-        specLoudness[:, :, chan] = (specTonalLoudness[:, :, chan]**maxLoudnessFuncel
-                                    + np.abs((weight_n*specNoiseLoudness[:,
-                                                                         :,
-                                                                         chan])
-                                             ** maxLoudnessFuncel))**(1/maxLoudnessFuncel)
+        specLoudness[:, :, chan] = (specTonalLoudness[:, :,
+                                                      chan]**maxLoudnessFuncel
+                                    + weight_n*specNoiseLoudness[:, :, chan]
+                                    ** maxLoudnessFuncel)**(1/maxLoudnessFuncel)
+    
     # end of loudness for loop over channels
 
     if chansIn == 2 and binaural:
@@ -681,8 +681,8 @@ def shmLoudnessECMAFromComp(specTonalLoudness, specNoiseLoudness,
     # end of if branch for singleton dimensions
 
     # Assign outputs to structure
+    loudnessSHM = {}
     if chansOut == 3:
-        loudnessSHM = {}
         loudnessSHM.update({'specLoudness': specLoudness[:, :, 0:2]})
         loudnessSHM.update({'specLoudnessPowAvg': specLoudnessPowAvg[:, 0:2]})
         loudnessSHM.update({'loudnessTDep': loudnessTDep[:, 0:2]})
