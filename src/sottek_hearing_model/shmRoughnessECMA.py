@@ -283,8 +283,10 @@ def shmRoughnessECMA(p, sampleRateIn, axisN=0, soundField='freeFrontal',
     # Input signal samples
     n_samples = p_re.shape[0]
 
-    # Section 7.1.7 Equation 103 [l_last]
-    l_50Last = int(np.ceil(n_samples/hopSize) + 1)
+    # Section 5.1.5.2 and equation 103 [l_last]
+    # NOTE: the corresponding definition of l_last in section 5.1.5.2 is
+    # incorrect.
+    l_50Last = int(np.floor(n_samples/sampleRate48k*sampleRate50) + 1)
 
     # Section 5.1.2 ECMA-418-2:2025 Fade in weighting and zero-padding
     pn = shmPreProc(p_re, blockSize=blockSize, hopSize=hopSize, padStart=True,

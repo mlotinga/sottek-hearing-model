@@ -338,9 +338,9 @@ def shmTonalityECMA(p, sampleRateIn, axisN=0, soundField='freeFrontal',
                                 pn_omz[:, 15:26], pn_omz[:, 25:53]))
 
         if waitBar:
-            bandACFIter = tqdm(prange(61), desc="Critical band autocorrelation")
+            bandACFIter = tqdm(range(61), desc="Critical band autocorrelation")
         else:
-            bandACFIter = prange(61)
+            bandACFIter = range(61)
 
         # pre-allocate arrays
         # basisLoudnessArray = np.empty(61, dtype=object)
@@ -358,10 +358,10 @@ def shmTonalityECMA(p, sampleRateIn, axisN=0, soundField='freeFrontal',
 
         # Average the ACF over nB bands - Section 6.2.3 ECMA-418-2:2025
         if waitBar:
-            bandACFAvgIter = tqdm(prange(nBands),
+            bandACFAvgIter = tqdm(range(nBands),
                                   desc="Component loudness estimation")
         else:
-            bandACFAvgIter = prange(nBands)
+            bandACFAvgIter = range(nBands)
 
         with ThreadPoolExecutor(max_workers=nThreads) as executor:
             futures = [executor.submit(shmCritBandTonalityComponents, zBand,

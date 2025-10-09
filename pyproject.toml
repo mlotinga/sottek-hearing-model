@@ -11,7 +11,6 @@ requires-python = ">=3.11"
 dependencies = [
     "bottleneck>=1.6.0",
     "matplotlib>=3.10.6",
-    "numba>=0.61.2",
     "numpy>=2.2.6",
     "pyqt6>=6.9.1",
     "scipy>=1.16.2",
