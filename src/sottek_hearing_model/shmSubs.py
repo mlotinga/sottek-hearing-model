@@ -52,7 +52,6 @@ from scipy.signal import (freqz, lfilter, resample_poly, sosfilt, sosfreqz)
 from scipy.special import (comb)
 from math import gcd
 import bottleneck as bn
-from numba import njit
 
 # set plot parameters
 mpl.rcParams['font.family'] = 'sans-serif'
@@ -1340,7 +1339,6 @@ def shmCritBandAutoCorrelation(zBand, bandCentreFreqs, blockSizeBands, overlap, 
 # end of shmCritBandAutoCorrelation function
 
 
-@njit(parallel=True, fastmath=True)
 def shmCritBandTonalityComponents(zBand, bandCentreFreqs, blockSizeBands, lastBlock, dfz, unbiasedNormACF, i_NBandsAvg):
     """shmCritBandTonalityComponents(zBand, bandCentreFreqs, blockSizeBands, lastBlock, dfz, unbiasedNormACF, i_NBandsAvg)
 
