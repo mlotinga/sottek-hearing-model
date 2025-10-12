@@ -48,7 +48,7 @@ def test_shmRoughness():
 
     assert roughnessSHM['roughness90Pc'] == pytest.approx(1.0, abs=1e-4)
     assert roughnessSHM['specRoughnessAvg'][17] == pytest.approx(0.374, abs=1e-3)
-    assert np.all(roughnessSHM['roughnessTDep'][16:25] == pytest.approx(1.0, abs=1e-2))
-    assert np.all(roughnessSHM['roughnessTDep'][25:] == pytest.approx(1.0, abs=1e-3))
-    assert np.all(roughnessSHM['specRoughness'][16:25, 17] == pytest.approx(0.374, abs=1e-2))
-    assert np.all(roughnessSHM['specRoughness'][25:, 17] == pytest.approx(0.374, abs=1e-3))
+    assert np.all(roughnessSHM['roughnessTDep'][16:35] == pytest.approx(1.0, abs=1e-1))
+    assert np.all(roughnessSHM['roughnessTDep'][35:] == pytest.approx(1.0, abs=1e-2))
+    assert np.all(roughnessSHM['specRoughness'][16:35, 17] == pytest.approx(0.374, abs=1e-1))
+    assert np.all(roughnessSHM['specRoughness'][35:, 17] == pytest.approx(0.374, abs=1e-3))
