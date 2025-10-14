@@ -35,9 +35,10 @@ These implementations first originated in a MATLAB code SottekTonality.m authore
 
 The MATLAB implementations are also available as part of SQAT (Sound Quality Analysis Toolbox): [https://github.com/ggrecow/SQAT](https://github.com/ggrecow/SQAT)
 
-# Licensing
+## Licensing
 This work is licensed under the copyleft GNU General Public License v3.
 
-# Contact
+## Contact
 If you would like to report a bug, make suggested improvements or ask a question, please open an issue on GitHub. If you would like to contribute, you could raise a pull request. For anything else, please contact Mike Lotinga ([https://github.com/mlotinga](https://github.com/mlotinga)).
+
 
