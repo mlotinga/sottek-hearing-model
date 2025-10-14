@@ -9,7 +9,7 @@ pip install sottek-hearing-model
 ```
 
 ## How to cite
-The package was initially translated from the MATLAB codes published alongside the following paper: 
+The algorithms in this package were initially translated to Python from the MATLAB codes published alongside the following paper: 
 
 > Lotinga, M. J. B., Torjussen, M., & Felix Greco, G. (2025). Verified implementations of the Sottek psychoacoustic Hearing Model standardised sound quality metrics (ECMA-418-2 loudness, tonality and roughness). Proceedings of Forum Acusticum / Euronoise, Malaga, Spain, 23–26 June 2025. [https://www.researchgate.net/publication/392904348](https://www.researchgate.net/publication/392904348)
 
@@ -40,6 +40,7 @@ This work is licensed under the copyleft GNU General Public License v3.
 
 ## Contact
 If you would like to report a bug, make suggested improvements or ask a question, please open an issue on GitHub. If you would like to contribute, you could raise a pull request. For anything else, please contact Mike Lotinga ([https://github.com/mlotinga](https://github.com/mlotinga)).
+
 
 
 
