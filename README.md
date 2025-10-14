@@ -2,7 +2,7 @@
 
 This package is an implementation of the psychoacoustic sound quality metrics from the Sottek Hearing Model defined in ECMA-418-2.
 
-## Installation
+## How to install
 
 The package can be installed with pip:
 
@@ -10,7 +10,7 @@ The package can be installed with pip:
 pip install sottek-hearing-model
 ```
 
-## Citation
+## How to cite
 
 The package was initially translated from the MATLAB codes published alongside the following paper: 
 
@@ -38,3 +38,9 @@ This package was developed during research undertaken as part of the RefMap proj
 These implementations first originated in a MATLAB code SottekTonality.m authored by Matt Torjussen, which implemented the ECMA-418-2:2020 tonality algorithms. The code was developed and amended by Mike Lotinga with permission, who later incorporated the loudness and roughness metrics.
 
 The MATLAB implementations are also available as part of SQAT (Sound Quality Analysis Toolbox): [https://github.com/ggrecow/SQAT](https://github.com/ggrecow/SQAT)
+
+# Licensing
+
+# Contact
+
+If you would like to report a bug, make suggested improvements or ask a question, please open an issue on GitHub. If you would like to contribute, you could raise a pull request. For anything else, please contact Mike Lotinga ([https://github.com/mlotinga](https://github.com/mlotinga)).
