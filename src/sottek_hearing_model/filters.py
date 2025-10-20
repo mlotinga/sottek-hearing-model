@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 filters.py
-------------
+----------
 
 Filter functions:
 
@@ -18,7 +18,7 @@ Author: Mike JB Lotinga (m.j.lotinga@edu.salford.ac.uk)
 Institution: University of Salford
 
 Date created: 22/01/2024
-Date last modified: 03/09/2025
+Date last modified: 20/10/2025
 Python version: 3.11
 
 Copyright statements: This file is based on code developed within the refmap-psychoacoustics
@@ -39,7 +39,7 @@ from scipy.signal import (bilinear, lfilter, lfilter_zi, resample_poly)
 from math import gcd
 
 
-def A_weight_T(x, fs, axis=0):
+def weight_A_t(x, fs, axis=0):
     """
     Return time-domain-filtered signal according to standard sound frequency
     weighting 'A'.

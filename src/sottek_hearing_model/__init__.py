@@ -1,17 +1,17 @@
 # -*- coding: utf-8 -*-
 
-from .shmTonalityECMA import shmTonalityECMA
+from .shm_tonality_ecma import shm_tonality_ecma
 
-from .shmLoudnessECMA import shmLoudnessECMA
+from .shm_loudness_ecma import shm_loudness_ecma
 
-from .shmLoudnessECMA import shmLoudnessECMAFromComp
+from .shm_loudness_ecma import shm_loudness_ecma_from_comp
 
-from .shmRoughnessECMA import shmRoughnessECMA
+from .shm_roughness_ecma import shm_roughness_ecma
 
-from .shmReferenceSignals import shmGenerateRefSignals
+from .shm_reference_signals import shm_generate_ref_signals
 
-__all__ = ["shmTonalityECMA",
-           "shmLoudnessECMA",
-           "shmLoudnessECMAFromComp",
-           "shmRoughnessECMA",
-           "shmGenerateRefSignals"]
+__all__ = ["shm_tonality_ecma",
+           "shm_loudness_ecma",
+           "shm_loudness_ecma_from_comp",
+           "shm_roughness_ecma",
+           "shm_generate_ref_signals"]
