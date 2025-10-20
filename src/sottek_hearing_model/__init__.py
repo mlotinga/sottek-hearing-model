@@ -8,7 +8,10 @@ from .shmLoudnessECMA import shmLoudnessECMAFromComp
 
 from .shmRoughnessECMA import shmRoughnessECMA
 
+from .shmReferenceSignals import shmGenerateRefSignals
+
 __all__ = ["shmTonalityECMA",
            "shmLoudnessECMA",
            "shmLoudnessECMAFromComp",
-           "shmRoughnessECMA"]
+           "shmRoughnessECMA",
+           "shmGenerateRefSignals"]

@@ -12,7 +12,6 @@ Requirements
 numpy
 scipy
 matplotlib
-bottleneck
 
 Ownership and Quality Assurance
 -------------------------------
@@ -20,7 +19,7 @@ Author: Mike JB Lotinga (m.j.lotinga@edu.salford.ac.uk)
 Institution: University of Salford
 
 Date created: 27/10/2023
-Date last modified: 08/10/2025
+Date last modified: 20/10/2025
 Python version: 3.11
 
 Copyright statement: This code has been devloped during work undertaken within
@@ -49,7 +48,7 @@ import matplotlib as mpl
 from matplotlib import pyplot as plt
 import matplotlib.ticker as ticker
 from scipy.signal import (freqz, lfilter, resample_poly, sosfilt, sosfreqz)
-from scipy.special import (comb)
+from scipy.special import comb
 from math import gcd
 
 # set plot parameters
@@ -309,59 +308,6 @@ def shmBasisLoudness(signalSegmented, bandCentreFreq=None):
     return (signalRectSeg, basisLoudness, blockRMS)
 
     # end of function
-
-
-# %% shmNoiseRedLowPass
-def shmNoiseRedLowPass(signal, sampleRateIn):
-    """
-    signalFiltered = shmNoiseRedLowPass(signal, sampleRateIn)
-
-    Returns signal low pass filtered for noise reduction according to
-    ECMA-418-2:2025 (the Sottek Hearing Model) for an input signal.
-
-    Inputs
-    ------
-    signal : 1D or 2D matrix
-             the input signal as single mono or stereo audio (sound
-             pressure) signals
-
-    sampleRateIn : double
-                   the sample rate (frequency) of the input signal(s)
-
-    Returns
-    -------
-    signalFiltered : 1D or 2D matrix
-                     the filtered signal/s
-
-    Assumptions
-    -----------
-    The input signal is oriented with time on axis 0 (and channel # on axis 1),
-    ie, the filtering operation is applied along axis 0.
-
-    Checked by:
-    Date last checked:
-    """
-    k = 3  # Footnote 21 ECMA-418-2:2025
-    e_i = [0, 1, 1]  # Footnote 21 ECMA-418-2:2025
-
-    # Footnote 20 ECMA-418-2:2025
-    tau = 1/32*6/7
-
-    d = np.exp(-1/(sampleRateIn*tau))  # Section 5.1.4.2 ECMA-418-2:2025
-
-    # Feed-backward coefficients, Equation 14 ECMA-418-2:2025
-    m_a = range(1, k + 1)
-    a = np.append(1, ((-d)**m_a)*comb(k, m_a))
-
-    # Feed-forward coefficients, Equation 15 ECMA-418-2:2025
-    m_b = range(k)
-    i = range(1, k)
-    b = (((1 - d)**k)/sum(e_i[1:]*(d**i)))*(d**m_b)*e_i
-
-    # Recursive filter Equation 13 ECMA-418-2:2025
-    signalFiltered = lfilter(b, a, signal, axis=0)
-
-    return signalFiltered
 
 
 # %% shmOutMidEarFilter
@@ -978,12 +924,11 @@ def shmDimensional(ndArray, targetDim=2, where='last'):
     return targArray  # end of shmDimensional function
 
 
-# %% shmRoughWeight
-def shmRoughWeight(modRate, modfreqMaxWeight, roughWeightParams):
+# %% shmModWeight
+def shmModWeight(modRate, modfreqMaxWeight, weightParams):
     """
-    Returns roughness weighting for high- and low-frequency (modulation
-    rates) according to ECMA-418-2:2025 (the Sottek Hearing Model) for a set
-    of modulation rates and parameters.
+    Returns modulation weightings according to ECMA-418-2:2025 (the Sottek Hearing Model)
+    for a set of modulation rates and parameters.
 
     Inputs
     ------
@@ -995,13 +940,13 @@ def shmRoughWeight(modRate, modfreqMaxWeight, roughWeightParams):
                        the modulation rate at which the weighting reaches its
                        maximum value (one)
 
-    roughWeightParams : array
+    weightParams : array
                         the parameters for the each of the weightings (high
                         or low)
 
     Returns
     -------
-    roughWeight : array
+    modWeight : array
                   the weighting values for the input parameters
 
     Assumptions
@@ -1012,74 +957,82 @@ def shmRoughWeight(modRate, modfreqMaxWeight, roughWeightParams):
     Date last checked:
     """
     # Equation 85 [G_l,z,i(f_p,i(l,z))]
-    roughWeight = np.divide(1, (1 + ((modRate/modfreqMaxWeight
-                                      - np.divide(modfreqMaxWeight, modRate,
-                                                  out=np.zeros_like(modRate),
-                                                  where=modRate != 0))
-                                     * roughWeightParams[0, :, :])**2)**roughWeightParams[1, :, :],
-                            out=np.zeros_like(modRate),
-                            where=modRate != 0)
+    modWeight = np.divide(1, (1 + ((modRate/modfreqMaxWeight
+                                    - np.divide(modfreqMaxWeight, modRate,
+                                                out=np.zeros_like(modRate),
+                                                where=modRate != 0))
+                                    * weightParams[0, :, :])**2)**weightParams[1, :, :],
+                          out=np.zeros_like(modRate),
+                          where=modRate != 0)
 
-    return roughWeight  # end of shmRoughWeight function
+    return modWeight
+# end of shmModWeight function
 
 
-# %% shmRoughLowPass
-def shmRoughLowPass(specRoughEstTform, sampleRate, riseTime, fallTime):
+# %% shmModLowPass
+def shmModLowPass(specModulation, sampleRate, riseTime, fallTime):
     """
-    specRoughness = shmRoughLowPass(specRoughEstTform, sampleRate, riseTime,
+    specModulation = shmModLowPass(specModulation, sampleRate, riseTime,
                                     fallTime)
 
-    Returns specific roughness low pass filtered for smoothing according to
-    ECMA-418-2:2025 (the Sottek Hearing Model) for an input transformed
-    estimate of the specific roughnesss.
+    Returns specific modulation (roughness or fluctuation strength), low-pass
+    filtered for smoothing according to ECMA-418-2:2025 (the Sottek Hearing Model)
+    for an input specific modulation (roughness or fluctuation strength).
 
     Inputs
     ------
-    specRoughEstTform : 2D array
-                        the input specific roughness estimate (from
-                        Equation 104)
+    specModulation : 2D array
+                     the input specific modulation (roughness or fluctuation strength)
 
     sampleRate : double
                  the sample rate (frequency) of the input specific
-                 roughness (NB: this is not the original signal sample
+                 modulation (NB: this is not the original signal sample
                  rate; currently it should be set to 50 Hz)
+
+    riseTime : double
+               the rise time constant (s) for the low-pass filter
+
+    fallTime : double
+               the fall time constant (s) for the low-pass filter
 
     Returns
     -------
-    specRoughness : 2D array
-                    the filtered specific roughness
+    specModulation : 2D array
+                     the low-pass filtered specific modulation
+                     (roughness or fluctuation strength)
 
     Assumptions
     -----------
-    The input specific roughness estimate is orientated with time on axis 0,
+    The input specific modulation is orientated with time on axis 0,
     and critical bands on axis 1.
 
     """
-    riseExponent = np.exp(-1/(sampleRate*riseTime))*np.ones([specRoughEstTform.shape[1]])
-    fallExponent = np.exp(-1/(sampleRate*fallTime))*np.ones([specRoughEstTform.shape[1]])
+    riseExponent = np.exp(-1/(sampleRate*riseTime))*np.ones([specModulation.shape[1]])
+    fallExponent = np.exp(-1/(sampleRate*fallTime))*np.ones([specModulation.shape[1]])
 
-    specRoughness = specRoughEstTform.copy()
+    specMod = specModulation.copy()
 
-    for llBlock in range(1, specRoughEstTform.shape[0]):
+    for llBlock in range(1, specModulation.shape[0]):
 
-        riseMask = (specRoughEstTform[llBlock, :]
-                    >= specRoughness[llBlock - 1, :])
+        riseMask = (specModulation[llBlock, :]
+                    >= specMod[llBlock - 1, :])
         fallMask = ~riseMask
 
-        if specRoughEstTform[llBlock, riseMask].size != 0:
-            specRoughness[llBlock, riseMask] = (specRoughEstTform[llBlock,
-                                                                  riseMask]*(1 - riseExponent[riseMask])
-                                                + specRoughness[llBlock - 1,
-                                                                riseMask]*riseExponent[riseMask])
+        if specModulation[llBlock, riseMask].size != 0:
+            specMod[llBlock, riseMask] = (specModulation[llBlock,
+                                                         riseMask]*(1 - riseExponent[riseMask])
+                                          + specMod[llBlock - 1,
+                                                    riseMask]*riseExponent[riseMask])
         # end of rise branch
-        if specRoughEstTform[llBlock, fallMask].size != 0:
-            specRoughness[llBlock, fallMask] = (specRoughEstTform[llBlock,
-                                                                  fallMask]*(1 - fallExponent[fallMask])
-                                                + specRoughness[llBlock - 1,
+        if specModulation[llBlock, fallMask].size != 0:
+            specMod[llBlock, fallMask] = (specModulation[llBlock,
+                                                          fallMask]*(1 - fallExponent[fallMask])
+                                          + specMod[llBlock - 1,
                                                                 fallMask]*fallExponent[fallMask])
         # end of fall branch
 
-    return specRoughness  # end of shmRoughLowPass function
+    return specMod
+# end of shmModLowPass function
 
 
 # %% shmRound

@@ -21,7 +21,7 @@ Author: Mike JB Lotinga (m.j.lotinga@edu.salford.ac.uk)
 Institution: University of Salford
 
 Date created: 29/05/2023
-Date last modified: 09/10/2025
+Date last modified: 20/09/2025
 Python version: 3.11
 
 Copyright statement: This code has been devloped during work undertaken within
@@ -45,7 +45,6 @@ here with permission.
 import numpy as np
 from numpy.lib.stride_tricks import sliding_window_view
 import matplotlib as mpl
-mpl.use('QtAgg')
 from matplotlib import pyplot as plt
 from scipy.fft import (fft)
 from scipy.signal import (hilbert, windows, find_peaks)
@@ -59,14 +58,12 @@ from sottek_hearing_model.shmSubs import (shmDimensional,
                                           shmSignalSegment,
                                           shmBasisLoudness,
                                           shmDownsample,
-                                          shmRoughWeight,
-                                          shmRoughLowPass,
+                                          shmModWeight,
+                                          shmModLowPass,
                                           shmRound, shmRMS,
                                           shmInCheck)
 from tqdm import tqdm
 from sottek_hearing_model.filters import A_weight_T
-from concurrent.futures import ThreadPoolExecutor, as_completed
-import multiprocessing
 
 # %% Module settings
 mpl.rcParams['font.family'] = 'sans-serif'
@@ -80,9 +77,6 @@ plt.rc('xtick', labelsize=16)  # fontsize of the tick labels
 plt.rc('ytick', labelsize=20)  # fontsize of the tick labels
 plt.rc('legend', fontsize=16)  # legend fontsize
 plt.rc('figure', titlesize=24)  # fontsize of the figure title
-
-# parallel processing cpu cores
-n_threads = max(1, multiprocessing.cpu_count() - 1)  # leave one free core
 
 # %% shmRoughnessECMA
 def shmRoughnessECMA(p, sampleRateIn, axisN=0, soundField='freeFrontal',
@@ -587,8 +581,8 @@ def shmRoughnessECMA(p, sampleRateIn, axisN=0, soundField='freeFrontal',
 
         # Section 7.1.5.2 ECMA-418-2:2025 - Weighting for high modulation rates
         # Equation 85 [G_l,z,i(f_p,i(l,z))]
-        roughHiWeight = shmRoughWeight(modRate, modfreqMaxWeight,
-                                       roughHiWeightParams)
+        roughHiWeight = shmModWeight(modRate, modfreqMaxWeight,
+                                     roughHiWeightParams)
 
         # Equation 83 [Atilde_i(l,z)]
         modAmpHiWeight = modAmp*roughScale
@@ -732,8 +726,8 @@ def shmRoughnessECMA(p, sampleRateIn, axisN=0, soundField='freeFrontal',
         # end of for loop over bands
 
         # Equation 95 [A(l,z)]
-        roughLoWeight = shmRoughWeight(modFundRate, modfreqMaxWeight,
-                                       roughLoWeightParams)
+        roughLoWeight = shmModWeight(modFundRate, modfreqMaxWeight,
+                                     roughLoWeightParams)
         modMaxWeightSum = np.sum(modMaxWeight, axis=0)
         modMaxLoWeight = np.sum(roughLoWeight*modMaxWeight, axis=0)
         mask = modFundRate <= resDFT1500
@@ -778,8 +772,8 @@ def shmRoughnessECMA(p, sampleRateIn, axisN=0, soundField='freeFrontal',
         # Section 7.1.7 Equation 109-110 [R'(l_50,z)]
         riseTime = 0.0625
         fallTime = 0.5
-        specRoughness[:, :, chan] = shmRoughLowPass(specRoughEstTform, sampleRate50,
-                                                    riseTime, fallTime)
+        specRoughness[:, :, chan] = shmModLowPass(specRoughEstTform, sampleRate50,
+                                                  riseTime, fallTime)
 
     # end of for loop over channels
 
@@ -861,7 +855,7 @@ def shmRoughnessECMA(p, sampleRateIn, axisN=0, soundField='freeFrontal',
                     ylim=[0, 1.1*np.ceil(np.max(roughnessTDep[:, chan])*10)/10],
                     ylabel=(r"Roughness, $\mathregular{asper_{SHM}}$"))
             ax2.grid(alpha=0.075, linestyle='--')
-            ax2.legend(bbox_to_anchor=(1, 0.85), title="Overall")
+            ax2.legend(bbox_to_anchor=(1.05, 0.85), loc='upper left', title="Overall")
 
             # Filter signal to determine A-weighted time-averaged level
             if chan == 2:
@@ -923,287 +917,4 @@ def shmRoughnessECMA(p, sampleRateIn, axisN=0, soundField='freeFrontal',
         roughnessSHM.update({'soundField': soundField})
 
     return roughnessSHM
-
 # end of shmRoughnessECMA function
-
-
-def shmSpectralWeighting(zBand, lBlock, errorCorrection, resDFT1500, theta, modWeightSpectraAvgBandBlock):
-    """shmSpectralWeighting(zBand, lBlock, errorCorrection, resDFT1500, theta, modWeightSpectraAvgBandBlock)
-
-    Modulation spectral weighting and peak picking as defined in section 7.1.5 of ECMA-418-2:2025.
-
-    Parameters
-    ----------
-    
-    zBand : int
-            Critical band index
-
-    lBlock : int
-            Time block index
-
-    errorCorrection : float
-            Error correction factors from table 10 of ECMA-418-2:2025
-
-    resDFT1500 : float
-            Resolution of the DFT at 1500 Hz sampling rate
-
-    theta : range
-            Indices for error correction factors from table 10 of ECMA-418-2:2025
-
-    modWeightSpectraAvgBandBlock : 1D array
-            Averaged weighted modulation amplitude spectra for the current band and block
-
-    Returns
-    -------
-    zBand : int
-            Critical band index
-    
-    lBlock : int
-             Time block index
-    
-    modAmpBandBlock : 1D array
-                      Modulation amplitudes for the current band and block
-
-    modRateBandBlock : 1D array
-                       Modulation rates for the current band and block
-
-    """
-
-    # %% Define constants
-
-    # Start and end indices for modulation spectrum analysis
-    startIdx = 2
-    endIdx = 255
-    # %% Signal processing
-    # identify peaks in each block (for each band)
-
-    modWeightSpectraAvgForLoop = modWeightSpectraAvgBandBlock[startIdx:endIdx]
-    kLocs, pkProps = find_peaks(modWeightSpectraAvgForLoop,
-                                prominence=0)
-    PhiPks = modWeightSpectraAvgForLoop[kLocs]
-    proms = pkProps['prominences']
-
-    # reindex kLocs to match spectral start index used in findpeaks
-    # for indexing into modulation spectra matrices
-    kLocs = kLocs + startIdx
-
-    # we canonly have peaks at k = 3:254
-    mask = np.isin(kLocs, range(3, 255))
-    kLocs = kLocs[mask]
-    PhiPks = PhiPks[mask]
-
-    modAmpBandBlock = np.zeros(10)
-    modRateBandBlock = np.zeros(10)
-
-    # consider 10 highest prominence peaks only
-    if len(proms) > 10:
-        promsSorted = np.sort(proms)[::-1]
-        iiSort = np.argsort(proms)[::-1]
-        mask = proms >= promsSorted[9]
-
-        # if branch to deal with duplicated peak prominences
-        if sum(mask) > 10:
-            mask = mask[iiSort <= 9]
-        # end of if branch for duplicated peak prominences
-
-        PhiPks = PhiPks[mask]
-        kLocs = kLocs[mask]
-
-    # end of if branch to select 10 highest prominence peaks
-
-    # consider peaks meeting criterion
-    if PhiPks.size != 0:
-        mask = PhiPks > 0.05*np.max(PhiPks)  # Equation 72 criterion
-        PhiPks = PhiPks[mask]  # [Phihat(k_p,i(l,z))]
-        kLocs = kLocs[mask]
-        # loop over peaks to obtain modulation rates
-        for iPeak in range(len(PhiPks)):
-            # Equation 74 ECMA-418-2:2025
-            # [Phihat_E,l,z]
-            modAmpMat = np.vstack((modWeightSpectraAvgForLoop[kLocs[iPeak] - 1],
-                                   modWeightSpectraAvgForLoop[kLocs[iPeak]],
-                                   modWeightSpectraAvgForLoop[kLocs[iPeak] + 1]))
-
-            # Equation 82 [A_i(l,z)]
-            modAmpBandBlock[iPeak] = np.sum(modAmpMat)
-
-            # Equation 75 ECMA-418-2:2025
-            # [K]
-            modIndexMat = np.vstack((np.hstack(((kLocs[iPeak] - 1)**2,
-                                                kLocs[iPeak] - 1, 1)),
-                                        np.hstack(((kLocs[iPeak])**2,
-                                                kLocs[iPeak], 1)),
-                                        np.hstack(((kLocs[iPeak] + 1)**2,
-                                                kLocs[iPeak] + 1, 1))))
-
-            # Equation 73 solution [C]
-            coeffVec = np.linalg.solve(modIndexMat, modAmpMat)
-
-            # Equation 76 ECMA-418-2:2025 [ftilde_p,i(l,z)]
-            modRateEst = (-(coeffVec[1]/(2*coeffVec[0]))*resDFT1500).item(0)
-
-            # Equation 79 ECMA-418-2:2025 [beta(theta)]
-            errorBeta = ((np.floor(modRateEst/resDFT1500)
-                            + theta[:33]/32)*resDFT1500
-                            - (modRateEst
-                            + errorCorrection[theta[:33]]))
-
-            # Equation 80 ECMA-418-2:2025 [theta_min]
-            thetaMinError = np.argmin(np.abs(errorBeta))
-
-            # Equation 81 ECMA-418-2:2025 [theta_corr]
-            if (thetaMinError > 0) and (errorBeta[thetaMinError]*errorBeta[thetaMinError
-                                                                            - 1]
-                                        < 0):
-                thetaCorr = thetaMinError
-            else:
-                thetaCorr = thetaMinError + 1
-            # end of eq 81 if-branch
-
-            # Equation 78 ECMA-418-2:2025
-            # [rho(ftilde_p,i(l,z))]
-            biasAdjust = (errorCorrection[thetaCorr - 1]
-                            - (errorCorrection[thetaCorr]
-                                - errorCorrection[thetaCorr - 1])
-                            * errorBeta[thetaCorr - 1]
-                            / (errorBeta[thetaCorr]
-                                - errorBeta[thetaCorr - 1]))
-
-            # Equation 77 ECMA-418-2:2025 [f_p,i(l,z)]
-            modRateBandBlock[iPeak] = modRateEst + biasAdjust
-
-        # end of for loop over peaks in block per band
-    # end of if branch for detected peaks in modulation spectrum
-
-    return (zBand, lBlock, modAmpBandBlock, modRateBandBlock)
-
-
-def shmFundamentalModRate(zBand, lBlock, modRateBandBlock, modAmpHiWeightBandBlock):
-    """shmFundamentalModRate(zBand, lBlock, modRateBandBlock, modAmpHiWeightBandBlock)
-
-    Estimate the fundamental modulation rates and associated modulation amplitudes
-    for each time block in each critical band, weighted for distance between the
-    peak centre of gravity and and the maximum peak, according to section 7.1.5.3 of
-    ECMA-418-2:2025.
-
-    Parameters
-    ----------
-    zBand : int
-            Critical band index
-
-    lBlock : int
-             Time block index
-
-    modRateBandBlock : 1D array
-                       Modulation rates for each critical band and time block
-
-    modWeightSpectraAvgBandBlock : 1D array
-                          Weighted, averaged modulation spectra for each critical band
-                          and time block
-    Returns
-    -------
-    modFundRateBlockBand : float
-                  Fundamental modulation rate for each time block and critical band
-
-    modMaxWeightBlockBand : 1D array
-                   Modulation amplitudes for each band and block
-    """
-
-    # %% Define constants
-
-    epsilon = 1e-12  # small value to avoid divide by zero
-
-    # %% Signal processing
-    # Section 7.1.5.3 ECMA-418-2:2025 - Estiimation of fundamental modulation rate
-    
-    # output array initialisation
-    modFundRateBandBlock = 0.0
-    modMaxWeightBandBlock = np.zeros([10,], order='F')
-
-    # Proceed with rate detection if non-zero modulation rates
-    if np.max(modRateBandBlock) > 0:
-        modRateForLoop = modRateBandBlock[modRateBandBlock > 0]
-
-        nPeaks = len(modRateForLoop)
-
-        # initialise empty list for equation 90
-        indSetiPeak = np.empty([nPeaks,], dtype=object)
-        # initialise empty matrix for equation 91
-        harmCompEnergy = np.empty([nPeaks,], dtype=object)
-
-        for iPeak in range(nPeaks):
-            # Equation 88 [R_i_0(i)]
-            modRateRatio = shmRound(modRateForLoop/modRateForLoop[iPeak])
-            uniqRatios, startGroupInds, countDupes = np.unique(modRateRatio,
-                                                                return_index=True,
-                                                                return_counts=True)
-
-            # add any non-duplicated ratio indices
-            testIndices = -np.ones([10,]).astype(int)
-            if len(startGroupInds[countDupes == 1]) > 0:
-                testIndices[0:len(startGroupInds[countDupes
-                                                    == 1])] = startGroupInds[countDupes
-                                                                            == 1]
-            # end of non-duplicated ratio if branch
-
-            # loop over duplicated values to select single index
-            if np.max(countDupes) > 1:
-                dupeRatioVals = uniqRatios[countDupes > 1]
-                for jDupe in range(len(dupeRatioVals)):
-
-                    # Equation 89 [i]
-                    dupeGroupInds = (modRateRatio == dupeRatioVals[jDupe]).nonzero()[0]
-                    denom = modRateRatio[dupeGroupInds]*modRateForLoop[iPeak]
-                    testDupe = np.abs(np.divide(modRateForLoop[dupeGroupInds],
-                                                denom,
-                                                out=np.zeros_like(denom),
-                                                where=denom != 0) - 1)
-
-                    # discard if no testDupes
-                    if len(testDupe) > 0:
-                        testDupeMin = np.argmin(testDupe)
-                        # append selected index
-                        testIndices[len(startGroupInds[countDupes == 1])
-                                    + jDupe] = dupeGroupInds[testDupeMin]
-                    # end of if branch for testDupes
-                # end of for loop over duplicated ratios
-            # end of if branch for duplicated ratios
-
-            # discard negative indices
-            testIndices = testIndices[testIndices >= 0]
-
-            # Equation 90 [I_i_0]
-            denom = modRateRatio[testIndices]*modRateForLoop[iPeak]
-            harmComplexTest = np.abs(np.divide(modRateForLoop[testIndices],
-                                                denom,
-                                                out=np.zeros_like(denom),
-                                                where=denom != 0) - 1)
-            indSetiPeak[iPeak] = testIndices[harmComplexTest < 0.04]
-
-            # Equation 91 [E_i_0]
-            harmCompEnergy[iPeak] = np.sum(modAmpHiWeightBandBlock[indSetiPeak[iPeak]])
-
-        # end of loop over peaks
-
-        harmCompEnergy = harmCompEnergy.astype(float)
-        iMaxEnergy = np.argmax(harmCompEnergy)
-        indSetMax = indSetiPeak[iMaxEnergy]
-        modFundRateBandBlock = modRateForLoop[iMaxEnergy]
-        # Equation 94 [i_peak]
-        iPeakAmp = np.argmax(modAmpHiWeightBandBlock[indSetMax])
-        iPeak = indSetMax[iPeakAmp]
-
-        # Equation 93 [w_peak]
-        gravityWeight = 1 + 0.1*np.abs(np.sum(modRateForLoop[indSetMax]
-                                                * modAmpHiWeightBandBlock[indSetMax],
-                                                axis=0)
-                                        / np.sum(modAmpHiWeightBandBlock[indSetMax]
-                                                + epsilon, axis=0)
-                                        - modRateForLoop[iPeak])**0.749
-
-        # Equation 92 [Ahat(i)]
-        modMaxWeightBandBlock[indSetMax] = gravityWeight*modAmpHiWeightBandBlock[indSetMax]
-
-        # end of if branch for non-zero modulation rates
-    return (zBand, lBlock, modFundRateBandBlock, modMaxWeightBandBlock)
-# end of shmFundamentalModRate function

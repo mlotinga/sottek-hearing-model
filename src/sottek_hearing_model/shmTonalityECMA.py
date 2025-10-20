@@ -14,6 +14,7 @@ numpy
 scipy
 matplotlib
 tqdm
+bottleneck
 
 Functions
 ---------
@@ -39,7 +40,7 @@ Author: Mike JB Lotinga (m.j.lotinga@edu.salford.ac.uk)
 Institution: University of Salford
 
 Date created: 25/05/2023
-Date last modified: 09/10/2025
+Date last modified: 20/10/2025
 Python version: 3.11
 
 Copyright statement: This code has been developed during work undertaken within
@@ -61,15 +62,16 @@ here with permission.
 
 # %% Import block
 import numpy as np
+from scipy.signal import lfilter
+from scipy.special import comb
 import matplotlib as mpl
-mpl.use('QtAgg')
+# mpl.use('QtAgg')
 from matplotlib import pyplot as plt
 from sottek_hearing_model.shmSubs import (shmResample, shmPreProc,
                                           shmOutMidEarFilter,
                                           shmAuditoryFiltBank,
                                           shmSignalSegment,
                                           shmBasisLoudness,
-                                          shmNoiseRedLowPass,
                                           shmRMS, shmRound,
                                           shmInCheck)
 from tqdm import tqdm
@@ -514,7 +516,7 @@ def shmTonalityECMA(p, sampleRateIn, axisN=0, soundField='freeFrontal',
                     ylim=[0, 1.1*np.ceil(np.max(tonalityTDep[:, chan])*10)/10],
                     ylabel=(r"Tonality, $\mathregular{tu_{SHM}}$"))
             ax2.grid(alpha=0.075, linestyle='--')
-            ax2.legend(bbox_to_anchor=(1, 0.85), title="Overall")
+            ax2.legend(bbox_to_anchor=(1.05, 0.85), loc='upper left', title="Overall")
 
             # Filter signal to determine A-weighted time-averaged level
             pA = A_weight_T(p_re[:, chan], fs=sampleRate48k)
@@ -556,6 +558,59 @@ def shmTonalityECMA(p, sampleRateIn, axisN=0, soundField='freeFrontal',
 
     return tonalitySHM
 # end of shmTonalityECMA function
+
+
+# %% shmNoiseRedLowPass
+def shmNoiseRedLowPass(signal, sampleRateIn):
+    """
+    signalFiltered = shmNoiseRedLowPass(signal, sampleRateIn)
+
+    Returns signal low pass filtered for noise reduction according to
+    ECMA-418-2:2025 (the Sottek Hearing Model) for an input signal.
+
+    Inputs
+    ------
+    signal : 1D or 2D matrix
+             the input signal as single mono or stereo audio (sound
+             pressure) signals
+
+    sampleRateIn : double
+                   the sample rate (frequency) of the input signal(s)
+
+    Returns
+    -------
+    signalFiltered : 1D or 2D matrix
+                     the filtered signal/s
+
+    Assumptions
+    -----------
+    The input signal is oriented with time on axis 0 (and channel # on axis 1),
+    ie, the filtering operation is applied along axis 0.
+
+    Checked by:
+    Date last checked:
+    """
+    k = 3  # Footnote 21 ECMA-418-2:2025
+    e_i = [0, 1, 1]  # Footnote 21 ECMA-418-2:2025
+
+    # Footnote 20 ECMA-418-2:2025
+    tau = 1/32*6/7
+
+    d = np.exp(-1/(sampleRateIn*tau))  # Section 5.1.4.2 ECMA-418-2:2025
+
+    # Feed-backward coefficients, Equation 14 ECMA-418-2:2025
+    m_a = range(1, k + 1)
+    a = np.append(1, ((-d)**m_a)*comb(k, m_a))
+
+    # Feed-forward coefficients, Equation 15 ECMA-418-2:2025
+    m_b = range(k)
+    i = range(1, k)
+    b = (((1 - d)**k)/sum(e_i[1:]*(d**i)))*(d**m_b)*e_i
+
+    # Recursive filter Equation 13 ECMA-418-2:2025
+    signalFiltered = lfilter(b, a, signal, axis=0)
+
+    return signalFiltered
 
 
 def shmCritBandAutoCorrelation(zBand, bandCentreFreqs, blockSizeBands, overlap, signalBands):

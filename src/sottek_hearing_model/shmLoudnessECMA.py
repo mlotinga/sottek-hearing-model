@@ -25,7 +25,7 @@ Author: Mike JB Lotinga (m.j.lotinga@edu.salford.ac.uk)
 Institution: University of Salford
 
 Date created: 29/05/2023
-Date last modified: 09/10/2025
+Date last modified: 20/10/2025
 Python version: 3.11
 
 Copyright statement: This code has been devloped during work undertaken within
@@ -45,7 +45,7 @@ PARTICULAR PURPOSE.
 # %% Import block
 import numpy as np
 import matplotlib as mpl
-mpl.use('QtAgg')
+# mpl.use('QtAgg')
 from matplotlib import pyplot as plt
 from sottek_hearing_model.shmSubs import (shmResample,
                                           shmDimensional, shmRMS,
@@ -662,7 +662,7 @@ def shmLoudnessECMAFromComp(specTonalLoudness, specNoiseLoudness,
                     ylim=[0, 1.1*np.ceil(np.max(loudnessTDep[:, chan])*10)/10],
                     ylabel=(r"Loudness, $\mathregular{sone_{SHM}}$"))
             ax2.grid(alpha=0.075, linestyle='--')
-            ax2.legend(bbox_to_anchor=(1, 0.85), title="Overall")
+            ax2.legend(bbox_to_anchor=(1.05, 0.85), loc='upper left', title="Overall")
 
             fig.suptitle(t=(chan_lab + " signal"))
             fig.show()
