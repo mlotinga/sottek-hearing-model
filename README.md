@@ -42,6 +42,34 @@ By default, a progress bar is displayed illustrating the analysis computation pr
 
 For more information on input arguments, use the help docstrings.
 
+Since the Sottek Hearing Model loudness metric uses the tonal and noise loudness components that are generated using the tonality algorithms, a convenience function, `shm_loudness_ecma_from_comp()` is provided, which reduces the loudness computation time to negligible when also calculating the tonality metric. The use of this convenience function is demonstrated in the next example below. When using this convenience function, the soundfield type cannot be specified, as this is inherited from the component loudnesses.
+
+The corresponding reference signals for each metric, which are used for calibration and testing, can be generated and analysed as follows (which also demonstrates the `shm_loudness_ecma_from_comp()` convenience function):
+
+```python
+from sottek_hearing_model import *
+
+(sine_1k_40dB,
+ sine_1kHz_70Hz_60dB,
+ sine_1kHz_4Hz_60dB) = shm_generate_ref_signals(10)
+
+tonality = shm_tonality_ecma(p=sine_1k_40dB,
+                             samp_rate_in=48e3,
+                             soundfield='free_frontal',
+                             out_plot=True)
+
+loudness = shm_loudness_ecma_from_comp(tonality['spec_tonal_loudness'],
+                                       tonality['spec_noise_loudness'],
+                                       out_plot=True)
+
+roughness = shm_roughness_ecma(p=sine_1kHz_70Hz_60dB,
+                               samp_rate_in=48e3,
+                               soundfield='free_frontal',
+                               out_plot=True)
+```
+
+The third reference signal generated above, `sine_1kHz_4Hz_60dB` corresponds with fluctuation strength. This metric will be added to the package in a future release.
+
 ## How to cite
 The algorithms in this package were initially translated to Python from the MATLAB codes published alongside the following paper: 
 
