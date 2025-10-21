@@ -1,5 +1,5 @@
 # sottek-hearing-model
-This package is an implementation of the psychoacoustic sound quality metrics from the Sottek Hearing Model defined in ECMA-418-2.
+An implementation of the psychoacoustic sound quality metrics from the Sottek Hearing Model defined in ECMA-418-2.
 
 ## How to install
 The package can be installed with pip:
@@ -102,7 +102,3 @@ This work is licensed under the copyleft [GNU General Public License v3](https:/
 
 ## Contact
 If you would like to report a bug, make suggested improvements or ask a question, please open an issue on GitHub. If you would like to contribute, you could raise a pull request. For anything else, please contact Mike Lotinga ([https://github.com/mlotinga](https://github.com/mlotinga)).
-
-
-
-

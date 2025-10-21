@@ -21,7 +21,7 @@ Ownership and Quality Assurance
 Author: Mike JB Lotinga (m.j.lotinga@edu.salford.ac.uk)
 Institution: University of Salford
 Date created: 20/10/2025
-Date last modified: 20/10/2025
+Date last modified: 21/10/2025
 Python version: 3.11
 
 Copyright statement: This code has been developed during work undertaken within
@@ -103,22 +103,27 @@ def show_plot(fig=None, block=True):
     _ensure_backend()
 
     try:
+        # jupyter notebook
         if _is_jupyter():
-            # Jupyter auto-displays returned figures
+            from IPython.display import display
             if fig is not None:
-                return fig
-            return plt.gcf()
-        elif _is_interactive_console():
-            # IPython / VS Code interactive mode → skip duplicate show
-            if fig is not None:
-                return fig
-            return plt.gcf()
-        else:
-            # Regular Python script → show explicitly
-            if fig is not None:
-                fig.show()
+                display(fig)
             else:
-                plt.show(block=block)
+                display(plt.gcf())
+            return
+
+        # interactive IDE console (spyder/VS Code)
+        if _is_interactive_console() and ("JPY_PARENT_PID" in os.environ or "IPYKERNEL" in os.environ):
+            # Avoid plt.show() duplication when IDE manages rendering
+            if fig is not None:
+                return fig
+            return plt.gcf()
+
+        # Python or cmd/shell
+        if fig is not None:
+            fig.show()
+        else:
+            plt.show(block=block)
 
     except Exception as e:
         print(f"[plotting] Could not open GUI plot: {e}")

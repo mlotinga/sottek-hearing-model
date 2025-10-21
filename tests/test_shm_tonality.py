@@ -36,7 +36,7 @@ PARTICULAR PURPOSE.
 import pytest  # pyright: ignore[reportMissingImports]
 import numpy as np
 from sottek_hearing_model.shm_tonality_ecma import shm_tonality_ecma
-from sottek_hearing_model.shmReferenceSignals import shm_generate_ref_signals
+from sottek_hearing_model.shm_reference_signals import shm_generate_ref_signals
 
 
 # %% test_shm_tonality
