@@ -9,6 +9,8 @@ jobs:
   build-and-publish:
     name: Build and Publish
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout repository
