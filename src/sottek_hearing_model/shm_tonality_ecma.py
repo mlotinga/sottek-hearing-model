@@ -71,12 +71,12 @@ from scipy.special import comb
 import matplotlib as mpl
 from matplotlib import pyplot as plt
 from sottek_hearing_model.shm_subs import (shm_resample, shm_pre_proc,
-                                          shm_outmid_ear_filter,
-                                          shm_auditory_filtbank,
-                                          shm_signal_segment,
-                                          shm_basis_loudness,
-                                          shm_rms, shm_round,
-                                          shm_in_check)
+                                           shm_outmid_ear_filter,
+                                           shm_auditory_filtbank,
+                                           shm_signal_segment,
+                                           shm_basis_loudness,
+                                           shm_rms, shm_round,
+                                           shm_in_check)
 from tqdm import tqdm
 from sottek_hearing_model.filters import weight_A_t
 from sottek_hearing_model.plotting_tools import create_figure, show_plot
