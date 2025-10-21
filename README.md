@@ -1,5 +1,6 @@
 # sottek-hearing-model
 [![PyPI version](https://badge.fury.io/py/sottek-hearing-model.svg)](https://badge.fury.io/py/sottek-hearing-model)
+
 An implementation of the psychoacoustic sound quality metrics from the Sottek Hearing Model defined in ECMA-418-2.
 
 ## How to install
@@ -94,9 +95,11 @@ Bibtex:
 ## Acknowledgements
 This package was developed during research undertaken as part of the RefMap project ([https://www.refmap.eu](https://www.refmap.eu)), funded by UK Research and Innovation / EU HORIZON (grant 10061935).
 
-These implementations first originated in a MATLAB code SottekTonality.m authored by Matt Torjussen, which implemented the ECMA-418-2:2020 tonality algorithms. The code was developed and amended by Mike Lotinga with permission, who later incorporated the loudness and roughness metrics. Gil Felix Greco contributed verification testing routines that led to further improvement of the accuracy of the metrics.
+These implementations first originated in a MATLAB code SottekTonality.m authored by Matt Torjussen, which implemented the ECMA-418-2:2020 tonality algorithms. The code was developed and amended by Mike Lotinga (with permission), who later incorporated the loudness and roughness metrics, undertook verification confirmation, and organised the functions into a software package. Gil Felix Greco contributed further verification testing routines that led to improvement of the accuracy of the metrics.
 
 The MATLAB implementations are also available as part of SQAT (Sound Quality Analysis Toolbox): [https://github.com/ggrecow/SQAT](https://github.com/ggrecow/SQAT).
+
+Thanks are due to Professor Roland Sottek for developing the Hearing Model, and for helpfully answering queries about it. 
 
 ## Licensing
 This work is licensed under the copyleft [GNU General Public License v3](https://www.gnu.org/licenses/gpl-3.0.en.html).
