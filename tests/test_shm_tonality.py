@@ -33,7 +33,7 @@ PARTICULAR PURPOSE.
 """
 
 # %% Import block
-import pytest
+import pytest  # pyright: ignore[reportMissingImports]
 import numpy as np
 from sottek_hearing_model.shm_tonality_ecma import shm_tonality_ecma
 from sottek_hearing_model.shmReferenceSignals import shm_generate_ref_signals
@@ -41,7 +41,7 @@ from sottek_hearing_model.shmReferenceSignals import shm_generate_ref_signals
 
 # %% test_shm_tonality
 def test_shm_tonality():
-    tonality_ref_signal, _, _ = shm_generate_ref_signals(10)
+    tonality_ref_signal, _, _ = shm_generate_ref_signals(5)
 
     tonality = shm_tonality_ecma(p=tonality_ref_signal, samp_rate_in=48e3,
                                  axis=0, soundfield='free_frontal',

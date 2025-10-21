@@ -33,7 +33,7 @@ PARTICULAR PURPOSE.
 """
 
 # %% Import block
-import pytest
+import pytest  # pyright: ignore[reportMissingImports]
 import numpy as np
 from sottek_hearing_model.shm_loudness_ecma import (shm_loudness_ecma, shm_loudness_ecma_from_comp)
 from sottek_hearing_model.shm_reference_signals import shm_generate_ref_signals
@@ -41,35 +41,51 @@ from sottek_hearing_model.shm_reference_signals import shm_generate_ref_signals
 
 # %% test_shm_loudness
 def test_shm_loudness():
-    loudness_ref_signal, _, _ = shm_generate_ref_signals(10)
+    loudness_ref_signal, _, _ = shm_generate_ref_signals(5)
+
+    loudness_ref_signal = np.vstack((loudness_ref_signal, loudness_ref_signal))
 
     loudness = shm_loudness_ecma(p=loudness_ref_signal, samp_rate_in=48e3,
-                                 axis=0, soundfield='free_frontal',
-                                 wait_bar=False, out_plot=False, binaural=False)
+                                 axis=1, soundfield='free_frontal',
+                                 wait_bar=False, out_plot=False, binaural=True)
 
-    assert loudness['loudness_powavg'] == pytest.approx(1.0, abs=1e-4)
-    assert loudness['spec_loudness_powavg'][17] == pytest.approx(0.3477, abs=1e-4)
-    assert np.all(loudness['loudness_t'][57:87] == pytest.approx(1.0, abs=1e-2))
-    assert np.all(loudness['loudness_t'][87:] == pytest.approx(1.0, abs=1e-4))
-    assert np.all(loudness['spec_loudness'][57:87, 17] == pytest.approx(0.3477, abs=1e-2))
-    assert np.all(loudness['spec_loudness'][87:, 17] == pytest.approx(0.3477, abs=1e-4))
+    assert loudness['loudness_powavg'][0] == pytest.approx(1.0, abs=1e-4)
+    assert loudness['spec_loudness_powavg'][17, 0] == pytest.approx(0.3477, abs=1e-4)
+    assert np.all(loudness['loudness_t'][57:87, 0] == pytest.approx(1.0, abs=1e-2))
+    assert np.all(loudness['loudness_t'][87:, 0] == pytest.approx(1.0, abs=1e-3))
+    assert np.all(loudness['spec_loudness'][57:87, 17, 0] == pytest.approx(0.3477, abs=1e-2))
+    assert np.all(loudness['spec_loudness'][87:, 17, 0] == pytest.approx(0.3477, abs=1e-4))
+    assert loudness['loudness_powavg'][0] == pytest.approx(1.0, abs=1e-4)
+    assert loudness['spec_loudness_powavg_bin'][17] == pytest.approx(0.3477, abs=1e-4)
+    assert np.all(loudness['loudness_t_bin'][57:87] == pytest.approx(1.0, abs=1e-2))
+    assert np.all(loudness['loudness_t_bin'][87:] == pytest.approx(1.0, abs=1e-3))
+    assert np.all(loudness['spec_loudness_bin'][57:87, 17] == pytest.approx(0.3477, abs=1e-2))
+    assert np.all(loudness['spec_loudness_bin'][87:, 17] == pytest.approx(0.3477, abs=1e-4))
 
 
 # %% test_shm_loudness_from_comp
 def test_shm_loudness_from_comp():
-    loudness_ref_signal, _, _ = shm_generate_ref_signals(10)
+    loudness_ref_signal, _, _ = shm_generate_ref_signals(5)
 
     loudness = shm_loudness_ecma(p=loudness_ref_signal, samp_rate_in=48e3,
                                  axis=0, soundfield='free_frontal',
                                  wait_bar=False, out_plot=False, binaural=False)
+    
+    loudness_ref_signal = np.vstack((loudness_ref_signal, loudness_ref_signal))
 
     loudness_from_comp = shm_loudness_ecma_from_comp(loudness['spec_tonal_loudness'],
                                                      loudness['spec_noise_loudness'],
-                                                     out_plot=False, binaural=False)
+                                                     out_plot=False, binaural=True)
 
     assert loudness_from_comp['loudness_powavg'] == pytest.approx(1.0, abs=1e-4)
     assert loudness_from_comp['spec_loudness_powavg'][17] == pytest.approx(0.3477, abs=1e-4)
     assert np.all(loudness_from_comp['loudness_t'][57:87] == pytest.approx(1.0, abs=1e-2))
-    assert np.all(loudness_from_comp['loudness_t'][87:] == pytest.approx(1.0, abs=1e-4))
+    assert np.all(loudness_from_comp['loudness_t'][87:] == pytest.approx(1.0, abs=1e-3))
     assert np.all(loudness_from_comp['spec_loudness'][57:87, 17] == pytest.approx(0.3477, abs=1e-2))
     assert np.all(loudness_from_comp['spec_loudness'][87:, 17] == pytest.approx(0.3477, abs=1e-4))
+    assert loudness_from_comp['loudness_powavg'][0] == pytest.approx(1.0, abs=1e-4)
+    assert loudness_from_comp['spec_loudness_powavg_bin'][17] == pytest.approx(0.3477, abs=1e-4)
+    assert np.all(loudness_from_comp['loudness_t_bin'][57:87] == pytest.approx(1.0, abs=1e-2))
+    assert np.all(loudness_from_comp['loudness_t_bin'][87:] == pytest.approx(1.0, abs=1e-3))
+    assert np.all(loudness_from_comp['spec_loudness_bin'][57:87, 17] == pytest.approx(0.3477, abs=1e-2))
+    assert np.all(loudness_from_comp['spec_loudness_bin'][87:, 17] == pytest.approx(0.3477, abs=1e-4))

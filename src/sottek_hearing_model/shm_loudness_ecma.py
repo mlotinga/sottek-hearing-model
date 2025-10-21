@@ -225,9 +225,9 @@ def shm_loudness_ecma(p, samp_rate_in, axis=0, soundfield='free_frontal',
     # ------------------------------------------------------------
 
     # Obtain tonal and noise component specific loudnesses from Sections 5 & 6 ECMA-418-2:2025
-    tonality = shm_tonality_ecma(p_re, samp_rate48k, axisN=0,
+    tonality = shm_tonality_ecma(p_re, samp_rate48k, axis=0,
                                  soundfield=soundfield,
-                                  wait_bar=wait_bar, out_plot=False)
+                                 wait_bar=wait_bar, out_plot=False)
 
     spec_tonal_loudness = tonality['spec_tonal_loudness']  # [N'_tonal(l,z)]
     spec_noise_loudness = tonality['spec_noise_loudness']  # [N'_noise(l,z)]
