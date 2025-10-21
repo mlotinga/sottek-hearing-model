@@ -1,4 +1,5 @@
 # sottek-hearing-model
+[![PyPI version](https://badge.fury.io/py/sottek-hearing-model.svg)](https://badge.fury.io/py/sottek-hearing-model)
 An implementation of the psychoacoustic sound quality metrics from the Sottek Hearing Model defined in ECMA-418-2.
 
 ## How to install
