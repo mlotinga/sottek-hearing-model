@@ -377,11 +377,11 @@ def shm_loudness_ecma(p, samp_rate_in, axis=0, soundfield='free_frontal',
 
     # Discard singleton dimensions
     if chans_out == 1:
-        specLoudness = np.squeeze(specLoudness)
-        specTonalLoudness = np.squeeze(specTonalLoudness)
-        specNoiseLoudness = np.squeeze(specNoiseLoudness)
-        specLoudnessPowAvg = np.squeeze(specLoudnessPowAvg)
-        loudnessTDep = np.squeeze(loudnessTDep)
+        spec_loudness = np.squeeze(spec_loudness)
+        spec_tonal_loudness = np.squeeze(spec_tonal_loudness)
+        spec_noise_loudness = np.squeeze(spec_noise_loudness)
+        spec_loudness_powavg = np.squeeze(spec_loudness_powavg)
+        loudness_t = np.squeeze(loudness_t)
     # end of if branch for singleton dimensions
 
     # Assign outputs to structure
