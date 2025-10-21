@@ -68,7 +68,7 @@ roughness = shm_roughness_ecma(p=sine_1kHz_70Hz_60dB,
                                out_plot=True)
 ```
 
-The third reference signal generated above, `sine_1kHz_4Hz_60dB` corresponds with fluctuation strength. This metric will be added to the package in a future release.
+The third reference signal generated above (`sine_1kHz_4Hz_60dB`) corresponds with the fluctuation strength metric. This metric will be added to the package in a future release.
 
 ## How to cite
 The algorithms in this package were initially translated to Python from the MATLAB codes published alongside the following paper: 
@@ -98,7 +98,7 @@ These implementations first originated in a MATLAB code SottekTonality.m authore
 The MATLAB implementations are also available as part of SQAT (Sound Quality Analysis Toolbox): [https://github.com/ggrecow/SQAT](https://github.com/ggrecow/SQAT).
 
 ## Licensing
-This work is licensed under the copyleft GNU General Public License v3.
+This work is licensed under the copyleft [https://www.gnu.org/licenses/gpl-3.0.en.html](GNU General Public License v3).
 
 ## Contact
 If you would like to report a bug, make suggested improvements or ask a question, please open an issue on GitHub. If you would like to contribute, you could raise a pull request. For anything else, please contact Mike Lotinga ([https://github.com/mlotinga](https://github.com/mlotinga)).
