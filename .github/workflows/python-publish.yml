@@ -1,0 +1,54 @@
+name: Build and Publish to PyPI
+
+on:
+  push:
+    tags:
+      - "v*"  # runs on any tag starting with "v"
+
+jobs:
+  build-and-publish:
+    name: Build and Publish
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+
+      - name: Pin Python version (3.11)
+        run: |
+          uv python install 3.11
+          uv python pin 3.11
+
+      - name: Sync dependencies (with dev)
+        run: uv sync --dev
+
+      - name: Build package
+        run: uv build
+
+      # Optional step: publish to TestPyPI first for safety
+      - name: Publish to TestPyPI
+        if: startsWith(github.ref_name, 'v') && github.event_name == 'push'
+        env:
+          UV_TEST_PYPI_TOKEN: ${{ secrets.TEST_PYPI_API_TOKEN }}
+        run: |
+          echo "Uploading to TestPyPI..."
+          uv publish --index testpypi --token "$UV_TEST_PYPI_TOKEN" || echo "TestPyPI upload failed, continuing..."
+
+      # Main publish step (PyPI)
+      - name: Publish to PyPI
+        env:
+          UV_PYPI_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          echo "Uploading to PyPI..."
+          uv publish --token "$UV_PYPI_TOKEN"
+
+      # Create a GitHub Release (with release notes)
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
