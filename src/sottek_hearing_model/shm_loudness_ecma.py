@@ -335,7 +335,7 @@ def shm_loudness_ecma(p, samp_rate_in, axis=0, soundfield='free_frontal',
             ax2 = axs[1]
             ax2.plot(time_out, loudness_powavg[chan]*np.ones(time_out.size),
                      color=cmap_viridis(33/255), linewidth=1, linestyle='dotted',
-                     label=("Time-" + "\n" + "average"))
+                     label=("Power" + "\n" + "time-" + "\n" + "average"))
             ax2.plot(time_out, loudness_t[:, chan],
                      color=cmap_viridis(165/255),
                      linewidth=0.75, label=("Time-" + "\n" + "dependent"))
@@ -655,7 +655,7 @@ def shm_loudness_ecma_from_comp(spec_tonal_loudness, spec_noise_loudness,
             ax2 = axs[1]
             ax2.plot(time_out, loudness_powavg[chan]*np.ones(time_out.size),
                      color=cmap_viridis(33/255), linewidth=1, linestyle='dotted',
-                     label=("Time-" + "\n" + "average"))
+                     label=("Power" + "\n" + "time-" + "\n" + "average"))
             ax2.plot(time_out, loudness_t[:, chan],
                      color=cmap_viridis(165/255),
                      linewidth=0.75, label=("Time-" + "\n" + "dependent"))
