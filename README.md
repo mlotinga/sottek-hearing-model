@@ -12,7 +12,9 @@ pip install sottek-hearing-model
 After installing, the package functions can be imported as follows:
 
 ```python
-from sottek_hearing_model import shm_tonality_ecma, shm_loudness_ecma, shm_roughness_ecma
+from sottek_hearing_model import (shm_tonality_ecma,
+                                  shm_loudness_ecma,
+                                  shm_roughness_ecma)
 ```
 
 or (since the package currently comprises a small number of functions):
@@ -29,7 +31,9 @@ from sottek_hearing_model import shm_tonality_ecma
 
 audiodata, samplerate = sf.read('your_audio_file.wav')
 
-tonality = shm_tonality_ecma(p=audiodata, samp_rate_in=samplerate, axis=0, soundfield='free_frontal', out_plot=True)
+tonality = shm_tonality_ecma(p=audiodata, samp_rate_in=samplerate,
+                             axis=0, soundfield='free_frontal',
+                             out_plot=True)
 ```
 
 The above code will import the audio file, analyse it using the Sottek Hearing Model tonality metric, and output the results into a dict object `tonality`, as well as produce a figure plotting the results (`out_plot=True`).
