@@ -7,23 +7,19 @@ license = "AGPL-3.0-only"
 authors = [
     { name = "Mike Lotinga", email = "m.j.lotinga@edu.salford.ac.uk" }
 ]
-
-urls = {
-    "Homepage" = "https://github.com/mlotinga/sottek-hearing-model"
-    "Documentation" = "https://github.com/mlotinga/sottek-hearing-model/"
-    "Repository" = "https://github.com/mlotinga/sottek-hearing-model"
-    "Issues" = "Repository" = "https://github.com/mlotinga/sottek-hearing-model/issues"
-}
-
 requires-python = ">=3.11"
-dependencies = [
-    "bottleneck>=1.6.0",
-    "matplotlib>=3.9",
-    "numpy>=2.2.6",
-    "pyqt6>=6.9.1",
-    "scipy>=1.16.2",
-    "tqdm>=4.67.1",
-]
+dependencies = ["bottleneck>=1.6.0",
+                "matplotlib>=3.9",
+                "numpy>=2.2.6",
+                "pyqt6>=6.9.1",
+                "scipy>=1.16.2",
+                "tqdm>=4.67.1"]
+
+[project.urls]
+Homepage = "https://github.com/mlotinga/sottek-hearing-model"
+Documentation = "https://github.com/mlotinga/sottek-hearing-model/"
+Repository = "https://github.com/mlotinga/sottek-hearing-model"
+Issues = "https://github.com/mlotinga/sottek-hearing-model/issues"
 
 [build-system]
 requires = ["uv_build>=0.8.17,<0.9.0"]
