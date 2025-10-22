@@ -16,12 +16,15 @@ Requirements
 ------------
 matplotlib
 
+Functions
+---------
+
 Ownership and Quality Assurance
 -------------------------------
 Author: Mike JB Lotinga (m.j.lotinga@edu.salford.ac.uk)
 Institution: University of Salford
 Date created: 20/10/2025
-Date last modified: 21/10/2025
+Date last modified: 22/10/2025
 Python version: 3.11
 
 Copyright statement: This code has been developed during work undertaken within
@@ -29,107 +32,133 @@ the RefMap project (www.refmap.eu), based on the RefMap code repository
 
 """
 
+# %% Import block
+
 import os
-import sys
 import matplotlib as mpl
 from matplotlib import pyplot as plt
 
-# %% Internal Functions
-
-# _is_jupyter
+# %% _is_jupyter
 def _is_jupyter():
-    """Detect if running inside Jupyter/IPython notebook."""
+    """_is_jupyter()
+    
+    Detect if running inside a Jupyter-like environment
+    (incl. VS Code notebooks).
+    
+    """
+
     try:
         from IPython import get_ipython
-        shell = get_ipython().__class__.__name__
-        return shell in ("ZMQInteractiveShell",)  # Jupyter
+        shell = get_ipython()
+
+        if not shell:
+            return False
+
+        return shell.__class__.__name__ in (
+            "ZMQInteractiveShell",
+            "Shell",
+            "TerminalInteractiveShell",
+        )
+
     except Exception:
         return False
+# end of _is_jupyter internal function
 
 
-# _is_interactive_console
+# %% _is_interactive_console 
 def _is_interactive_console():
-    """Detect if running in an interactive shell (IPython, Spyder, etc.)."""
-    return hasattr(sys, "ps1") or "SPYDER" in os.environ or "VSCODE_PID" in os.environ
-
-
-# _ensure_backend
-def _ensure_backend(preferred="QtAgg"):
+    """_is_interactive_console()
+    Detect VS Code or Spyder interactive consoles (non-Jupyter).
     """
-    Select a safe Matplotlib backend:
-    - Jupyter → inline
-    - Interactive shell (Spyder, VS Code) → QtAgg if available
-    - Headless → Agg
+
+    return "IPYKERNEL" in os.environ or "JPY_PARENT_PID" in os.environ
+# end of _is_interactive_console internal function
+
+
+# %% _ensure_backend
+def _ensure_backend():
+    """_ensure_backend()
+    Ensure Matplotlib uses a GUI backend when available.
     """
-    current = mpl.get_backend().lower()
-
-    # 1. Jupyter Notebook
-    if _is_jupyter():
-        try:
-            from IPython import get_ipython
-            get_ipython().run_line_magic("matplotlib", "inline")
-            return
-        except Exception:
-            pass  # fallback below
-
-    # 2. Interactive shell or desktop session
-    if _is_interactive_console() or os.environ.get("DISPLAY") or sys.platform == "win32":
-        try:
-            import PyQt6  # noqa: F401
-            if "qt" not in current.lower():
-                mpl.use(preferred, force=True)
-            return
-        except Exception:
-            pass  # fallback below
-
-    # 3. Headless
-    mpl.use("Agg", force=True)
-
-
-# %% Public Functions
-
-# create_figure
-def create_figure(**kwargs):
-    """Create a Matplotlib figure using an environment-safe backend."""
-    _ensure_backend()
-    
-    fig, ax = plt.subplots(**kwargs)
-    return fig, ax
-
-
-# show_plot
-def show_plot(fig=None, block=True):
-    """Show a Matplotlib figure safely in GUI, notebook, or headless mode."""
-    _ensure_backend()
 
     try:
-        # jupyter notebook
+        current = mpl.get_backend().lower()
+        if "agg" in current:
+            mpl.use("QtAgg", force=True)
+
+    except Exception:
+        pass
+# end of _ensure_backend internal function
+
+
+# %% create_figure
+def create_figure(*args, **kwargs):
+    """create_figure(*args, **kwargs)
+
+    Create a Matplotlib figure safely.
+
+    - Temporarily disables interactive mode to prevent auto-display
+      in IDEs or notebooks.
+    - Restores prior state afterward.
+    """
+    interactive = mpl.is_interactive()
+    plt.ioff()
+    try:
+        fig, axs = plt.subplots(*args, **kwargs)
+
+    finally:
+        if interactive:
+            plt.ion()
+
+    return fig, axs
+# end of create_figure function
+
+
+# %% show_plot
+def show_plot(fig=None, block=True):
+    """show_plot(fig=None, block=True)
+
+    Display a Matplotlib figure safely across environments.
+
+    - Jupyter/VS Code: relies on auto-display (no duplicate)
+    - Shell/script: opens GUI window
+    - Headless: saves fallback PNG
+
+    Closes figure after display to prevent IDEs from duplicating it.
+    """
+    _ensure_backend()
+
+    if fig is None:
+        fig = plt.gcf()
+
+    try:
+        # jupyter or VS Code notebook ---
         if _is_jupyter():
             from IPython.display import display
-            if fig is not None:
-                display(fig)
-            else:
-                display(plt.gcf())
-            return
+            display(fig)
+            plt.close(fig)
+            return None
 
-        # interactive IDE console (spyder/VS Code)
-        if _is_interactive_console() and ("JPY_PARENT_PID" in os.environ or "IPYKERNEL" in os.environ):
-            # Avoid plt.show() duplication when IDE manages rendering
-            if fig is not None:
-                return fig
-            return plt.gcf()
+        # IDE interactive console (Spyder / VS Code terminal) ---
+        if _is_interactive_console() and mpl.is_interactive():
+            plt.draw()
+            plt.close(fig)
+            return None
 
-        # Python or cmd/shell
-        if fig is not None:
-            fig.show()
-        else:
-            plt.show(block=block)
+        # regular Python script / shell ---
+        fig.show()
+        plt.close(fig)
+        return None
 
     except Exception as e:
-        print(f"[plotting] Could not open GUI plot: {e}")
+        print(f"[plotting] Could not open GUI plot ({e}). Saving to file.")
         try:
             outfile = os.path.abspath("plot_output.png")
-            plt.savefig(outfile, dpi=300, bbox_inches='tight')
-            print(f"[plotting] Saved fallback figure to: {outfile}")
+            plt.savefig(outfile, dpi=300, bbox_inches="tight")
+            print(f"[plotting] Fallback figure saved to: {outfile}")
+
         except Exception:
             pass
+
+        return None
+# end of show_plot function

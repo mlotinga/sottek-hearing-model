@@ -17,7 +17,7 @@ Author: Mike JB Lotinga (m.j.lotinga@edu.salford.ac.uk)
 Institution: University of Salford
 
 Date created: 09/10/2025
-Date last modified: 21/10/2025
+Date last modified: 22/10/2025
 Python version: 3.11
 
 Copyright statement: This code has been developed during work undertaken within
@@ -60,4 +60,3 @@ def test_shm_roughness():
     assert np.all(roughness['roughness_t_bin'][35:] == pytest.approx(1.0, abs=1e-2))
     assert np.all(roughness['spec_roughness_bin'][16:35, 17] == pytest.approx(0.374, abs=1e-1))
     assert np.all(roughness['spec_roughness_bin'][35:, 17] == pytest.approx(0.374, abs=1e-3))
-

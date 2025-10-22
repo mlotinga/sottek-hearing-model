@@ -44,7 +44,7 @@ Author: Mike JB Lotinga (m.j.lotinga@edu.salford.ac.uk)
 Institution: University of Salford
 
 Date created: 25/05/2023
-Date last modified: 21/10/2025
+Date last modified: 22/10/2025
 Python version: 3.11
 
 Copyright statement: This code has been developed during work undertaken within
@@ -103,99 +103,99 @@ num_threads = max(1, multiprocessing.cpu_count() - 1)  # leave one free core
 # %% shm_tonality_ecma
 def shm_tonality_ecma(p, samp_rate_in, axis=0, soundfield='free_frontal',
                       wait_bar=True, out_plot=False):
-    """
-    Inputs
-    ------
+    """shm_tonality_ecma(p, samp_rate_in, axis=0, soundfield='free_frontal',
+                      wait_bar=True, out_plot=False)
+
+    Returns tonality values and frequencies according to ECMA-418-2:2025
+    for input audio signal.
+
+    Parameters
+    ----------
     p : 1D or 2D array
-        the input signal as single mono or stereo audio (sound pressure)
+        Input signal as single mono or stereo audio (sound pressure)
         signals
 
     samp_rate_in : integer
-                   the sample rate (frequency) of the input signal(s)
+        Sample rate (frequency) of the input signal(s)
 
     axis : integer (0 or 1, default: 0)
-           the time axis along which to calculate the tonality
+        Time axis along which to calculate the tonality
 
     soundfield : keyword string (default: 'free_frontal')
-                 determines whether the 'free_frontal' or 'diffuse' field stages
-                 are applied in the outer-middle ear filter, or 'no_outer' uses
-                 only the middle ear stage, or 'no_ear' omits ear filtering.
-                 Note: these last two options are beyond the scope of the
-                 standard, but may be useful if recordings made using
-                 artificial outer/middle ear are to be processed using the
-                 specific recorded responses.
+        Determines whether the 'free_frontal' or 'diffuse' field stages
+        are applied in the outer-middle ear filter, or 'no_outer' uses
+        only the middle ear stage, or 'no_ear' omits ear filtering.
+        Note: these last two options are beyond the scope of the
+        standard, but may be useful if recordings made using
+        artificial outer/middle ear are to be processed using the
+        specific recorded responses.
 
     wait_bar : keyword string (default: True)
-               determines whether a progress bar displays during processing
-               (set wait_bar to false for doing multi-file parallel calculations)
+        Determines whether a progress bar displays during processing
+        (set wait_bar to false for doing multi-file parallel calculations)
 
     out_plot : Boolean (default: False)
-               flag indicating whether to generate a figure from the output
-               (set out_plot to false for doing multi-file parallel calculations)
+        Flag indicating whether to generate a figure from the output
+        (set out_plot to false for doing multi-file parallel calculations)
 
     Returns
     -------
     tonality : dict
-               contains the output
+        Contains the output
 
     tonality contains the following outputs:
 
     spec_tonality : 2D or 3D array
-                    time-dependent specific tonality for each critical band
-                    arranged as [time, bands(, channels)]
+        Time-dependent specific tonality for each critical band
+        arranged as [time, bands(, channels)]
 
     spec_tonality_freqs : 2D or 3D array
-                          time-dependent frequencies of the dominant tonal
-                          components corresponding with each of the
-                          time-dependent specific tonality values in each
-                          (half) critical band
-                          arranged as [time, bands(, channels)]
+        Time-dependent frequencies of the dominant tonal
+        components corresponding with each of the
+        time-dependent specific tonality values in each
+        (half) critical band arranged as [time, bands(, channels)]
 
     spec_tonality_avg : 1D or 2D array
-                        time-averaged specific tonality for each critical band
-                        arranged as [bands(, channels)]
+        Time-averaged specific tonality for each critical band
+        arranged as [bands(, channels)]
 
     spec_tonality_avg_freqs : 1D or 2D array
-                              frequencies of the dominant tonal components
-                              corresponding with each of the
-                              time-averaged specific tonality values in each
-                              (half) critical band
-                              arranged as [bands(, channels)]
+        Frequencies of the dominant tonal components
+        corresponding with each of the
+        time-averaged specific tonality values in each
+        (half) critical band arranged as [bands(, channels)]
 
     spec_tonal_loudness : 2D or 3D array
-                          time-dependent specific tonal loudness for each
-                          critical band
-                          arranged as [time, bands(, channels)]
+        Time-dependent specific tonal loudness for each
+        critical band arranged as [time, bands(, channels)]
 
     spec_noise_loudness : 2D or 3D array
-                          time-dependent specific noise loudness for each
-                          critical band
-                          arranged as [time, bands(, channels)]
+        Time-dependent specific noise loudness for each
+        critical band arranged as [time, bands(, channels)]
 
     tonality_t : 1D or 2D array
-                   time-dependent overall tonality
-                   arranged as [time(, channels)]
+        Time-dependent overall tonality
+        arranged as [time(, channels)]
 
     tonality_t_freqs : 1D or 2D array
-                       time-dependent frequencies of the dominant tonal
-                       components corresponding with the
-                       time-dependent overall tonality values
-                       arranged as [time(, channels)]
+        Time-dependent frequencies of the dominant tonal
+        components corresponding with the time-dependent
+        overall tonality values arranged as [time(, channels)]
 
     tonality_avg : 1D or 2D array
-                   time-averaged overall tonality
-                   arranged as [tonality(, channels)]
+        Time-averaged overall tonality
+        arranged as [tonality(, channels)]
 
     band_centre_freqs : 1D array
-                        centre frequencies corresponding with each critical band
-                        rate
+        Centre frequencies corresponding with each critical
+        band rate
 
     time_out : 1D array
-               time (seconds) corresponding with time-dependent outputs
+        Time (seconds) corresponding with time-dependent outputs
 
     soundfield : string
-                 identifies the soundfield type applied (the input argument
-                 soundfield)
+        Identifies the soundfield type applied (== input argument
+        soundfield)
 
     If out_plot=True, a set of plots is returned illustrating the energy
     time-averaged A-weighted sound level, the time-dependent specific and
@@ -562,10 +562,10 @@ def shm_tonality_ecma(p, samp_rate_in, axis=0, soundfield='free_frontal',
 # end of shm_tonality_ecma function
 
 
+# %% shm_band_auto_correlation
 def shm_band_auto_correlation(z_band, band_centre_freqs, block_size_bands,
                               overlap, signal_bands):
-    """
-    shm_band_auto_correlation(z_band, band_centre_freqs, block_size_bands,
+    """shm_band_auto_correlation(z_band, band_centre_freqs, block_size_bands,
                                  overlap, signal_bands)
 
     Returns the critical band autocorrelation estimate.
@@ -573,28 +573,28 @@ def shm_band_auto_correlation(z_band, band_centre_freqs, block_size_bands,
     Inputs
     ------
     z_band : integer
-             the input critical band index
+        Input critical band index
 
     band_centre_freqs : array of floats
-                        the centre frequencies of the critical bands
+        Centre frequencies of the critical bands
 
     block_size_bands : array of integers
-                       the block size in samples for each critical band
+        Block size in samples for each critical band
 
     overlap : float
-              the proportion of overlap
+        Proportion of overlap
 
     signal_bands : 2D array
-                   the input critical bandpass-filtered signals
+        Input critical bandpass-filtered signals
 
     Returns
     -------
     z_band : integer
-             the input critical band index as output
+        Input critical band index as output
 
     unbiased_norm_band_acf : 2D array
-                             unbiased and normalised estimate of the autocorrelation
-                             function in the corresponding critical band
+        Unbiased and normalised estimate of the autocorrelation
+        function in the corresponding critical band
 
     """
 
@@ -647,42 +647,51 @@ def shm_band_auto_correlation(z_band, band_centre_freqs, block_size_bands,
 # end of shm_band_auto_correlation function
 
 
+# %% shm_band_loud_components
 def shm_band_loud_components(z_band, band_centre_freqs, block_size_bands,
                              last_block, dfz, unbiased_norm_acf, i_num_bands_avg):
-    """
-    shm_band_loud_components(z_band, band_centre_freqs, block_size_bands,
-                             last_block, dfz, unbiased_norm_acf, i_num_bands_avg)
+    """shm_band_loud_components(z_band, band_centre_freqs, block_size_bands,
+                                last_block, dfz, unbiased_norm_acf, i_num_bands_avg)
 
     Returns the tonal loudness, noise loudness and tonality frequencies for the critical band.
 
-    Inputs
-    ------
+    Parameters
+    ----------
     z_band : integer
-             the input critical band index
+        Input critical band index
+
     band_centre_freqs : array of floats
-                        the centre frequencies of the critical bands
+        Centre frequencies of the critical bands
+
     block_size_bands : array of integers
-                       the block size in samples for each critical band
+        Block size in samples for each critical band
+
     last_block : integer
-                 the index of the last block
+        Index of the last block
+
+    dfz : 1D array of floats
+        Bandwidths of the critical bands
+
     unbiased_norm_acf : 2D array
-                        the unbiased and normalised estimate of the autocorrelation
-                        function in the corresponding critical band
-    i_num_bands_avg : array of integers
-                      the indices for averaging adjacent critical bands
+        Unbiased and normalised estimate of the autocorrelation
+        function in the corresponding critical band
+
+    i_num_bands_avg : 2D array of integers
+        Indices for averaging adjacent critical bands
 
     Returns
     -------
     z_band : integer
-             the input critical band index as output
+        Input critical band index as output
     band_tonal_loudness : 2D array
-                          the specific loudness of the tonal component in the critical band
+        Specific loudness of the tonal component in the critical band
 
     band_noise_loudness : 2D array
-                          the specific loudness of the noise component in the critical band
-    
+        Specific loudness of the noise component in the critical band
+
     band_tonal_freqs : 2D array
-                       the time-dependent frequencies of the tonal components in the critical band
+        Time-dependent frequencies of the tonal components in the critical band
+
     """
 
     # %% Define constants
@@ -843,25 +852,24 @@ def shm_band_loud_components(z_band, band_centre_freqs, block_size_bands,
 
 # %% shm_noise_red_lowpass
 def shm_noise_red_lowpass(signal, samp_rate_in):
-    """
-    signal_filtered = shm_noise_red_lowpass(signal, samp_rate_in)
+    """signal_filtered = shm_noise_red_lowpass(signal, samp_rate_in)
 
     Returns signal low pass filtered for noise reduction according to
     ECMA-418-2:2025 (the Sottek Hearing Model) for an input signal.
 
-    Inputs
-    ------
+    Parameters
+    ----------
     signal : 1D or 2D matrix
-             the input signal as single mono or stereo audio (sound
-             pressure) signals
+        Input signal as single mono or stereo audio (sound
+        pressure) signals
 
     samp_rate_in : double
-                   the sample rate (frequency) of the input signal(s)
+        Sample rate (frequency) of the input signal(s)
 
     Returns
     -------
     signal_filtered : 1D or 2D matrix
-                      the filtered signal/s
+        Filtered signal/s
 
     Assumptions
     -----------
@@ -892,3 +900,4 @@ def shm_noise_red_lowpass(signal, samp_rate_in):
     signal_filtered = lfilter(b, a, signal, axis=0)
 
     return signal_filtered
+# end of shm_noise_red_lowpass function
