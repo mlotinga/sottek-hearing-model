@@ -40,11 +40,13 @@ jobs:
           uv publish --index testpypi --token "$UV_TEST_PYPI_TOKEN"
 
       # Main publishing step (PyPI)
-      - name: Publish to PyPI
+      - name: Publish to PyPI and TestPyPI
         if: startsWith(github.ref_name, 'v') && !contains(github.ref_name, 'rc') && !contains(github.ref_name, 'a') && !contains(github.ref_name, 'b')
         env:
           UV_PYPI_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
         run: |
+          echo "Uploading to TestPyPI..."
+          uv publish --index testpypi --token "$UV_TEST_PYPI_TOKEN"
           echo "Uploading to PyPI..."
           uv publish --token "$UV_PYPI_TOKEN"
 
