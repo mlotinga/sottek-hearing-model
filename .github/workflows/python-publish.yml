@@ -30,17 +30,18 @@ jobs:
       - name: Build package
         run: uv build
 
-      # Optional step: publish to TestPyPI first for safety
+      # TestPyPI publishing for pre-release versions (rc, alpha, beta)
       - name: Publish to TestPyPI
-        if: startsWith(github.ref_name, 'v') && github.event_name == 'push'
+        if: contains(github.ref_name, 'rc') || contains(github.ref_name, 'a') || contains(github.ref_name, 'b')
         env:
           UV_TEST_PYPI_TOKEN: ${{ secrets.TEST_PYPI_API_TOKEN }}
         run: |
           echo "Uploading to TestPyPI..."
-          uv publish --index testpypi --token "$UV_TEST_PYPI_TOKEN" || echo "TestPyPI upload failed, continuing..."
+          uv publish --index testpypi --token "$UV_TEST_PYPI_TOKEN"
 
-      # Main publish step (PyPI)
+      # Main publishing step (PyPI)
       - name: Publish to PyPI
+        if: startsWith(github.ref_name, 'v') && !contains(github.ref_name, 'rc') && !contains(github.ref_name, 'a') && !contains(github.ref_name, 'b')
         env:
           UV_PYPI_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
         run: |
@@ -52,5 +53,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
+          prerelease: ${{ contains(github.ref_name, 'rc') || contains(github.ref_name, 'a') || contains(github.ref_name, 'b') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
