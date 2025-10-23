@@ -456,15 +456,11 @@ def shm_roughness_ecma(p, samp_rate_in, axis=0, soundfield='free_frontal',
         
         if wait_bar:
             band_iter = tqdm(range(n_bands),
-                             desc="Modulation rates (bands)")
+                             desc="Modulation rates")
         else:
             band_iter = range(n_bands)
 
-        if wait_bar:
-            block_iter = tqdm(range(n_blocks),
-                              desc="Modulation rates (blocks)")
-        else:
-            block_iter = range(n_blocks)
+        block_iter = range(n_blocks)
 
         with ThreadPoolExecutor(max_workers=n_threads) as executor:
             futures = [executor.submit(shm_spectral_weight, z_band, l_block,
@@ -503,15 +499,11 @@ def shm_roughness_ecma(p, samp_rate_in, axis=0, soundfield='free_frontal',
 
         if wait_bar:
             band_iter = tqdm(range(n_bands),
-                            desc="Modulation weightings (bands)")
+                            desc="Modulation weightings")
         else:
             band_iter = range(n_bands)
 
-        if wait_bar:
-            block_iter = tqdm(range(n_blocks),
-                            desc="Modulation weightings (blocks)")
-        else:
-            block_iter = range(n_blocks)
+        block_iter = range(n_blocks)
 
         with ThreadPoolExecutor(max_workers=n_threads) as executor:
             futures = [executor.submit(shm_fundamental_mod_rate, z_band, l_block,
