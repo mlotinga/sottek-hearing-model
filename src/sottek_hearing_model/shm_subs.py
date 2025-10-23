@@ -621,14 +621,19 @@ def shm_resample(signal, samp_rate_in):
     if samp_rate_in != samp_rate48k:  # Resample signal
 
         try:
-            if samp_rate_in.is_integer() is True and samp_rate_in > 0:
+            if isinstance(samp_rate_in, int) and samp_rate_in > 0:
+                pass
+            
+            elif samp_rate_in.is_integer() is True and samp_rate_in > 0:
                 samp_rate_in = int(samp_rate_in)
-                # upsampling factor
-                up = samp_rate48k/gcd(samp_rate48k, samp_rate_in)
-                # downsampling factor
-                down = samp_rate_in/gcd(samp_rate48k, samp_rate_in)
+
             else:
                 raise TypeError("The input sample rate must be a positive integer to enable resampling to " + str(samp_rate48k) + " Hz:")
+            
+            # upsampling factor
+            up = samp_rate48k/gcd(samp_rate48k, samp_rate_in)
+            # downsampling factor
+            down = samp_rate_in/gcd(samp_rate48k, samp_rate_in)
 
         except TypeError as err:
             raise TypeError("The input sample rate must be a positive integer to enable resampling to " + str(samp_rate48k) + " Hz:", err)
