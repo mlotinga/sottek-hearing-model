@@ -22,6 +22,15 @@ shm_roughness_ecma : This is the main roughness function, which implements secti
                      7 of ECMA-418-2:2025, and returns a dict containing
                      the roughness results as numpy arrays.
 
+shm_envelopes : Segments the signal into time blocks and computes the signal envelopes
+                for each critical band.
+
+shm_spectral_weight : Identifies modulation spectral peaks and applies weighting
+                      to modulation spectra in each time block and critical band.
+
+shm_fundamental_mod_rate : Calculates the fundamental modulation rate in each time
+                           block and critical band.
+
 Ownership and Quality Assurance
 -------------------------------
 Author: Mike JB Lotinga (m.j.lotinga@edu.salford.ac.uk)
