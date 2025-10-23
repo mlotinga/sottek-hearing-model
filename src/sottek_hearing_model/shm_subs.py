@@ -41,7 +41,7 @@ Author: Mike JB Lotinga (m.j.lotinga@edu.salford.ac.uk)
 Institution: University of Salford
 
 Date created: 27/10/2023
-Date last modified: 22/10/2025
+Date last modified: 23/10/2025
 Python version: 3.11
 
 Copyright statement: This code has been developed during work undertaken within
@@ -627,17 +627,23 @@ def shm_resample(signal, samp_rate_in):
     # Input pre-processing
     # --------------------
     if samp_rate_in != samp_rate48k:  # Resample signal
+
         try:
-            # upsampling factor
-            up = samp_rate48k/gcd(samp_rate48k, samp_rate_in)
-            # downsampling factor
-            down = samp_rate_in/gcd(samp_rate48k, samp_rate_in)
+            if samp_rate_in.is_integer() is True and samp_rate_in > 0:
+                samp_rate_in = int(samp_rate_in)
+                # upsampling factor
+                up = samp_rate48k/gcd(samp_rate48k, samp_rate_in)
+                # downsampling factor
+                down = samp_rate_in/gcd(samp_rate48k, samp_rate_in)
+            else:
+                raise TypeError("The input sample rate must be a positive integer to enable resampling to " + str(samp_rate48k) + " Hz:")
 
         except TypeError as err:
             raise TypeError("The input sample rate must be a positive integer to enable resampling to " + str(samp_rate48k) + " Hz:", err)
+
         try:
             # apply resampling
-            resampledSignal = resample_poly(signal, up, down, axis=0)
+            resampled_signal = resample_poly(signal, up, down, axis=0)
         except TypeError as err:
             raise TypeError("TypeError: The input signal must be a numerical array:", err)
     else:  # don't resample

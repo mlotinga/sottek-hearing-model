@@ -19,7 +19,7 @@ Author: Mike JB Lotinga (m.j.lotinga@edu.salford.ac.uk)
 Institution: University of Salford
 
 Date created: 29/05/2023
-Date last modified: 21/10/2025
+Date last modified: 23/10/2025
 Python version: 3.11
 
 Copyright statement: This code has been developed during work undertaken within
@@ -42,7 +42,7 @@ from sottek_hearing_model.shm_subs import shm_rms
 
 
 # %% shm_generate_ref_signals
-def shm_generate_ref_signals(signal_duration):
+def shm_generate_ref_signals(signal_duration, samp_rate=48e3):
 
     # %% Input check
     try:
@@ -52,7 +52,7 @@ def shm_generate_ref_signals(signal_duration):
         raise TypeError("Input signal_duration must be a single numerical value.")
 
     # %% Input parameters
-    fs = 48_000  # Hz
+    fs = samp_rate  # Hz
     dt = 1/fs  # s
     T = signal_duration  # s
     n = int(T*fs)  # number of samples

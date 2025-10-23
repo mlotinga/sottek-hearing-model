@@ -17,7 +17,7 @@ Author: Mike JB Lotinga (m.j.lotinga@edu.salford.ac.uk)
 Institution: University of Salford
 
 Date created: 02/10/2025
-Date last modified: 21/10/2025
+Date last modified: 23/10/2025
 Python version: 3.11
 
 Copyright statement: This code has been developed during work undertaken within
@@ -61,17 +61,6 @@ def test_shm_loudness():
     assert np.all(loudness['loudness_t_bin'][87:] == pytest.approx(1.0, abs=1e-3))
     assert np.all(loudness['spec_loudness_bin'][57:87, 17] == pytest.approx(0.3477, abs=1e-2))
     assert np.all(loudness['spec_loudness_bin'][87:, 17] == pytest.approx(0.3477, abs=1e-4))
-
-
-# %% test_shm_loudness_from_comp
-def test_shm_loudness_from_comp():
-    loudness_ref_signal, _, _ = shm_generate_ref_signals(5)
-
-    loudness = shm_loudness_ecma(p=loudness_ref_signal, samp_rate_in=48e3,
-                                 axis=0, soundfield='free_frontal',
-                                 wait_bar=False, out_plot=False, binaural=False)
-    
-    loudness_ref_signal = np.vstack((loudness_ref_signal, loudness_ref_signal))
 
     loudness_from_comp = shm_loudness_ecma_from_comp(loudness['spec_tonal_loudness'],
                                                      loudness['spec_noise_loudness'],

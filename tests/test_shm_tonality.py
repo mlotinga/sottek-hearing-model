@@ -17,7 +17,7 @@ Author: Mike JB Lotinga (m.j.lotinga@edu.salford.ac.uk)
 Institution: University of Salford
 
 Date created: 02/10/2025
-Date last modified: 21/10/2025
+Date last modified: 23/10/2025
 Python version: 3.11
 
 Copyright statement: This code has been developed during work undertaken within
@@ -39,8 +39,8 @@ from sottek_hearing_model.shm_tonality_ecma import shm_tonality_ecma
 from sottek_hearing_model.shm_reference_signals import shm_generate_ref_signals
 
 
-# %% test_shm_tonality
-def test_shm_tonality():
+# %% test_shm_tonality_48k
+def test_shm_tonality_48k():
     tonality_ref_signal, _, _ = shm_generate_ref_signals(5)
 
     tonality = shm_tonality_ecma(p=tonality_ref_signal, samp_rate_in=48e3,
@@ -57,3 +57,21 @@ def test_shm_tonality():
     assert np.all(tonality['tonality_t_freqs'][57:] == pytest.approx(1000, abs=1))
     assert np.all(tonality['spec_tonality_freqs'][57:, 17] == pytest.approx(1000, abs=1))
 
+
+# %% test_shm_tonality_44k
+def test_shm_tonality_44k():
+    tonality_ref_signal, _, _ = shm_generate_ref_signals(5, samp_rate=44.1e3)
+
+    tonality = shm_tonality_ecma(p=tonality_ref_signal, samp_rate_in=44.1e3,
+                                 axis=0, soundfield='free_frontal',
+                                 wait_bar=False, out_plot=False)
+
+    assert tonality['tonality_avg'] == pytest.approx(1.0, abs=1e-3)
+    assert tonality['spec_tonality_avg'][17] == pytest.approx(1.0, abs=1e-3)
+    assert tonality['spec_tonality_avg_freqs'][17] == pytest.approx(1000, abs=1)
+    assert np.all(tonality['tonality_t'][57:87] == pytest.approx(1.0, abs=1e-2))
+    assert np.all(tonality['tonality_t'][87:] == pytest.approx(1.0, abs=1e-3))
+    assert np.all(tonality['spec_tonality'][57:87, 17] == pytest.approx(1.0, abs=1e-2))
+    assert np.all(tonality['spec_tonality'][87:, 17] == pytest.approx(1.0, abs=1e-3))
+    assert np.all(tonality['tonality_t_freqs'][57:] == pytest.approx(1000, abs=1))
+    assert np.all(tonality['spec_tonality_freqs'][57:, 17] == pytest.approx(1000, abs=1))
