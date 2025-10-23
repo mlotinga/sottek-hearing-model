@@ -43,6 +43,7 @@ jobs:
       - name: Publish to PyPI and TestPyPI
         if: startsWith(github.ref_name, 'v') && !contains(github.ref_name, 'rc') && !contains(github.ref_name, 'a') && !contains(github.ref_name, 'b')
         env:
+          UV_TEST_PYPI_TOKEN: ${{ secrets.TEST_PYPI_API_TOKEN }}
           UV_PYPI_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
         run: |
           echo "Uploading to TestPyPI..."
