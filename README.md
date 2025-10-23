@@ -42,7 +42,7 @@ The above code will import the audio file, analyse it using the Sottek Hearing M
 
 By default, a progress bar is displayed illustrating the analysis computation progression. When analysing a batch of files, you may want to suppress this using `wait_bar=False`, as well as omit output plotting (the default setting is `out_plot=False`).
 
-For more information on input arguments, use the help docstrings.
+For more information on input arguments and output objects, use the help docstrings.
 
 Since the Sottek Hearing Model loudness metric uses the tonal and noise loudness components that are generated using the tonality algorithms, a convenience function, `shm_loudness_ecma_from_comp()` is provided, which reduces the loudness computation time to negligible when also calculating the tonality metric. The use of this convenience function is demonstrated in the next example below. When using this convenience function, the soundfield type cannot be specified, as this is inherited from the component loudnesses.
 
@@ -51,11 +51,11 @@ The corresponding reference signals for each metric, which are used for calibrat
 ```python
 from sottek_hearing_model import *
 
-(sine_1k_40dB,
+(sine_1kHz_40dB,
  sine_1kHz_70Hz_60dB,
  sine_1kHz_4Hz_60dB) = shm_generate_ref_signals(10)
 
-tonality = shm_tonality_ecma(p=sine_1k_40dB,
+tonality = shm_tonality_ecma(p=sine_1kHz_40dB,
                              samp_rate_in=48e3,
                              soundfield='free_frontal',
                              out_plot=True)
