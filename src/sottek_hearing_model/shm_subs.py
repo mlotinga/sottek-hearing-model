@@ -16,11 +16,11 @@ matplotlib
 Functions
 ---------
 
-shm_auditory_filtbank : Implements the auditory filter bank.
-                        based on half-overlapping critical bands.
+shm_auditory_filtbank : Implements the auditory filter bank based on half-overlapping
+                        critical bands.
 shm_basis_loudness : Computes the basis loudness.
-shm_outmid_ear_filter : Applies the outer-middle ear filter according
-                        to the selected sound field.
+shm_outmid_ear_filter : Applies the outer-middle ear filter according to the selected
+                        sound field.
 shm_pre_proc : Prepares the input signal with truncation and zero-padding
 shm_resample : Resamples the input signal to the prescribed rate.
 shm_signal_segment_blocks : Segments the input signal into blocks.
@@ -371,9 +371,6 @@ def shm_outmid_ear_filter(signal, soundfield='free_frontal', out_plot=False):
     1), ie, the filtering operation is applied along axis 0.
     The input signal must be sampled at 48 kHz.
 
-    Checked by:
-    Date last checked:
-
     """
 
     # Signal processing
@@ -522,9 +519,6 @@ def shm_pre_proc(signal, block_size, hop_size, pad_start=True, pad_end=True):
     1), ie, the fade and padding operation is applied along axis 0.
     The input signal must be sampled at 48 kHz.
 
-    Checked by:
-    Date last checked:
-
     """
 
     # %% Signal processing
@@ -612,8 +606,6 @@ def shm_resample(signal, samp_rate_in):
     The samp_rate_in is an integer value (this is to guarantee that the target
                                           rate is exactly met).
 
-    Checked by:
-    Date last checked:
 
     """
 
