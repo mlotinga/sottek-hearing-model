@@ -1277,7 +1277,7 @@ wheels = [
 
 [[package]]
 name = "sottek-hearing-model"
-version = "0.1.10"
+version = "0.1.10rc2"
 source = { editable = "." }
 dependencies = [
     { name = "bottleneck" },
