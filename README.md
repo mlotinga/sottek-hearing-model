@@ -81,7 +81,7 @@ The algorithms in this package were initially translated to Python from the MATL
 
 BibTeX:
 ```tex
-@inproceedings{RN14112,
+@inproceedings{Lotinga2025Verified,
    author = {Lotinga, Michael J. B. and Torjussen, Matt and Felix Greco, G.},
    title = {{Verified implementations of the Sottek psychoacoustic Hearing Model standardised sound quality metrics (ECMA-418-2 loudness, tonality and roughness)}},
    booktitle = {Proceedings of Forum Acusticum / Euronoise 2025},
@@ -95,7 +95,7 @@ BibTeX:
 <!---
 Bibtex:
 ```
-@inproceedings{RN14112,
+@inproceedings{Lotinga2025Verified,
    author = {Lotinga, Michael J. B. and Torjussen, Matt and Felix Greco, G.},
    title = {Verified implementations of the Sottek psychoacoustic Hearing Model standardised sound quality metrics (ECMA-418-2 loudness, tonality and roughness)},
    booktitle = {Proceedings of Forum Acusticum 2025},
