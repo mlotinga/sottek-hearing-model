@@ -78,12 +78,13 @@ The algorithms in this package were initially translated to Python from the MATL
 > Lotinga, M. J. B., Torjussen, M., & Felix Greco, G. (2025). Verified implementations of the Sottek psychoacoustic Hearing Model standardised sound quality metrics (ECMA-418-2 loudness, tonality and roughness). Proceedings of Forum Acusticum / Euronoise, Malaga, Spain, 23–26 June 2025. [https://www.researchgate.net/publication/392904348](https://www.researchgate.net/publication/392904348)
 
 
+
 BibTeX:
 ```tex
 @inproceedings{RN14112,
    author = {Lotinga, Michael J. B. and Torjussen, Matt and Felix Greco, G.},
    title = {{Verified implementations of the Sottek psychoacoustic Hearing Model standardised sound quality metrics (ECMA-418-2 loudness, tonality and roughness)}},
-   booktitle = {Proceedings of Forum Acusticum 2025},
+   booktitle = {Proceedings of Forum Acusticum / Euronoise 2025},
    publisher = {European Acoustics Association},
    url = {https://www.researchgate.net/publication/392904348},
    year = {2025},
