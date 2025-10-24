@@ -44,7 +44,7 @@ By default, a progress bar is displayed illustrating the analysis computation pr
 
 For more information on input arguments and output objects, use the help docstrings.
 
-Since the Sottek Hearing Model loudness metric uses the tonal and noise loudness components that are generated using the tonality algorithms, a convenience function, `shm_loudness_ecma_from_comp()` is provided, which reduces the loudness computation time to negligible when also calculating the tonality metric. The use of this convenience function is demonstrated in the next example below. When using this convenience function, the soundfield type cannot be specified, as this is inherited from the component loudnesses.
+Since the Sottek Hearing Model loudness metric uses the tonal and noise loudness components that are generated using the tonality algorithms, a convenience function, `shm_loudness_ecma_from_comp()` is provided, which reduces the loudness computation time to negligible when also calculating the tonality metric. The use of this convenience function is demonstrated in the next example below. When using this convenience function, the soundfield type cannot be specified, as this is inherited from the component loudnesses. (Similarly, the A-weighted time-averaged sound level will not be displayed on the corresponding plots, as the sound pressure audio signal is not available to the convenience function to determine this.)
 
 The corresponding reference signals for each metric, which are used for calibration and testing, can be generated and analysed as follows (which also demonstrates the `shm_loudness_ecma_from_comp()` convenience function):
 
@@ -53,7 +53,7 @@ from sottek_hearing_model import *
 
 (sine_1kHz_40dB,
  sine_1kHz_70Hz_60dB,
- sine_1kHz_4Hz_60dB) = shm_generate_ref_signals(10)
+ sine_1kHz_4Hz_60dB) = shm_generate_ref_signals(signal_duration=10)
 
 tonality = shm_tonality_ecma(p=sine_1kHz_40dB,
                              samp_rate_in=48e3,
@@ -76,6 +76,20 @@ The third reference signal generated above (`sine_1kHz_4Hz_60dB`) corresponds wi
 The algorithms in this package were initially translated to Python from the MATLAB codes published alongside the following paper: 
 
 > Lotinga, M. J. B., Torjussen, M., & Felix Greco, G. (2025). Verified implementations of the Sottek psychoacoustic Hearing Model standardised sound quality metrics (ECMA-418-2 loudness, tonality and roughness). Proceedings of Forum Acusticum / Euronoise, Malaga, Spain, 23–26 June 2025. [https://www.researchgate.net/publication/392904348](https://www.researchgate.net/publication/392904348)
+
+
+BibTeX:
+```tex
+@inproceedings{RN14112,
+   author = {Lotinga, Michael J. B. and Torjussen, Matt and Felix Greco, G.},
+   title = {Verified implementations of the Sottek psychoacoustic Hearing Model standardised sound quality metrics (ECMA-418-2 loudness, tonality and roughness)},
+   booktitle = {Proceedings of Forum Acusticum 2025},
+   publisher = {European Acoustics Association},
+   url = {https://www.researchgate.net/publication/392904348},
+   year = {2025},
+   howpublished = {Forum Acusticum / Euronoise, Malaga, Spain, 23–26 June 2025}
+}
+```
 
 <!---
 Bibtex:
