@@ -24,11 +24,16 @@ jobs:
           uv python install 3.11
           uv python pin 3.11
 
-      - name: Sync dependencies (with dev)
-        run: uv sync --dev
+      - name: Sync dependencies
+        run: uv sync
 
       - name: Build package
         run: uv build
+
+      - name: Test import build check
+        run: |
+          echo "Running import test..."
+          uv run python -c "import sottek-hearing-model; print('✅ Import succeeded!')"
 
       # TestPyPI publishing for pre-release versions (rc, alpha, beta)
       - name: Publish to TestPyPI
