@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # %% Preamble
 """
-shm_tonalityecma.py
+shm_tonality_ecma.py
 ------------------
 
 Returns tonality values and frequencies according to ECMA-418-2:2025
@@ -44,7 +44,7 @@ Author: Mike JB Lotinga (m.j.lotinga@edu.salford.ac.uk)
 Institution: University of Salford
 
 Date created: 25/05/2023
-Date last modified: 22/10/2025
+Date last modified: 20/11/2025
 Python version: 3.11
 
 Copyright statement: This code has been developed during work undertaken within
