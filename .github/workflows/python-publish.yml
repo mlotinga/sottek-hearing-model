@@ -36,7 +36,7 @@ jobs:
       - name: Test import build check
         run: |
           echo "Running import test..."
-          uv run python -c "import sottek-hearing-model; print('✅ Import succeeded!')"
+          uv run python -c "import sottek_hearing_model; print('✅ Import succeeded!')"
 
       # TestPyPI publishing for pre-release versions (rc, alpha, beta)
       - name: Publish to TestPyPI
