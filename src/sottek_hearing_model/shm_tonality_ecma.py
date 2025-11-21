@@ -840,7 +840,7 @@ def shm_band_loud_components(z_band, band_centre_freqs, block_size_bands,
     # Section 6.2.8 Equation 48 ECMA-418-2:2025 [N'_noise(l,z)]
     # specific loudness of non-tonal component in critical band
     band_noise_loudness = (shm_noise_red_lowpass(band_loudness,
-                                            samp_rate1875)
+                                                 samp_rate1875)
                            - band_tonal_loudness)
 
     return (z_band,
