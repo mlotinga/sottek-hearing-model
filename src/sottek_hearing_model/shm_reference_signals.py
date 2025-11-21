@@ -19,7 +19,7 @@ Author: Mike JB Lotinga (m.j.lotinga@edu.salford.ac.uk)
 Institution: University of Salford
 
 Date created: 29/05/2023
-Date last modified: 23/10/2025
+Date last modified: 21/11/2025
 Python version: 3.11
 
 Copyright statement: This code has been developed during work undertaken within
@@ -42,7 +42,7 @@ from sottek_hearing_model.shm_subs import shm_rms
 
 
 # %% shm_generate_ref_signals
-def shm_generate_ref_signals(signal_duration, samp_rate=48e3):
+def shm_generate_ref_signals(signal_duration=5, samp_rate=48e3):
 
     # %% Input check
     try:
