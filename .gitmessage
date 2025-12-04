@@ -1,0 +1,28 @@
+# <type>: <short summary of the change>
+#
+# Types:
+#   feat:     New feature or user-visible enhancement
+#   fix:      Bug fix
+#   docs:     Documentation-only changes
+#   test:     Adding or updating tests
+#   refactor: Code change that doesn’t alter behaviour
+#   perf:     Performance improvement
+#   chore:    Maintenance / CI / packaging
+#
+# Summary (required):
+# - Start with <type>:
+# - Use the imperative mood (e.g. "add", "fix", not "added", "fixed")
+# - Must fit on a single line (< 72 characters)
+#
+# Body (optional):
+# - Explain what and why (not how)
+# - Wrap lines at ~72 characters
+# - Mention related issues or PRs (#number)
+#
+# Example:
+#   fix: prevent negative loudness in cochlear model
+#
+#   Negative values appeared in quiet passages due to a missing clamp
+#   operation. This adds a post-processing step to ensure values remain
+#   physiological. Fixes #42.
+#
