@@ -73,6 +73,10 @@ roughness = shm_roughness_ecma(p=sine_1kHz_70Hz_60dB,
 
 The third reference signal generated above (`sine_1kHz_4Hz_60dB`) corresponds with the fluctuation strength metric. This metric will be added to the package in a future release.
 
+## Known issues
+
+The signal duration that can be processed is limited by user RAM, since the whole signal is loaded for processing at once. There is also a known [memory overflow issue](https://github.com/mlotinga/sottek-hearing-model/issues/2) for longer signals caused by the inclusion of parallel processing to speed up the analysis, which currently limits signal durations to around 30 seconds. For longer signals, the existing MATLAB implementation could be use instead: [https://github.com/acoustics-code-salford/refmap-psychoacoustics/tree/main/src/mlab/ECMA_418-2](https://github.com/acoustics-code-salford/refmap-psychoacoustics/tree/main/src/mlab/ECMA_418-2).
+
 ## How to cite
 The algorithms in this package were initially translated to Python from the MATLAB codes published alongside the following paper: 
 
@@ -122,4 +126,5 @@ This work is licensed under the copyleft [GNU General Public License v3](https:/
 
 ## Contact
 If you would like to report a bug, make suggested improvements or ask a question, please open an issue on GitHub. If you would like to contribute, you could raise a pull request. For anything else, please contact Mike Lotinga ([https://github.com/mlotinga](https://github.com/mlotinga)).
+
 
