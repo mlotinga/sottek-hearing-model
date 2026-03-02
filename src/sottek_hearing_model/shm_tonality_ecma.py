@@ -44,7 +44,7 @@ Author: Mike JB Lotinga (m.j.lotinga@edu.salford.ac.uk)
 Institution: University of Salford
 
 Date created: 25/05/2023
-Date last modified: 20/11/2025
+Date last modified: 02/03/2026
 Python version: 3.11
 
 Copyright statement: This code has been developed during work undertaken within
@@ -98,13 +98,13 @@ plt.rc('legend', fontsize=16)  # legend fontsize
 plt.rc('figure', titlesize=24)  # fontsize of the figure title
 
 # parallel processing cpu cores
-num_threads = max(1, multiprocessing.cpu_count() - 1)  # leave one free core
+num_cores = max(1, multiprocessing.cpu_count() - 1)  # leave one free core
 
 # %% shm_tonality_ecma
 def shm_tonality_ecma(p, samp_rate_in, axis=0, soundfield='free_frontal',
-                      wait_bar=True, out_plot=False):
+                      wait_bar=True, out_plot=False, parallel_cores=None):
     """shm_tonality_ecma(p, samp_rate_in, axis=0, soundfield='free_frontal',
-                      wait_bar=True, out_plot=False)
+                         wait_bar=True, out_plot=False, parallel_cores=None)
 
     Returns tonality values and frequencies according to ECMA-418-2:2025
     for input audio signal.
@@ -113,13 +113,13 @@ def shm_tonality_ecma(p, samp_rate_in, axis=0, soundfield='free_frontal',
     ----------
     p : 1D or 2D array
         Input signal as single mono or stereo audio (sound pressure)
-        signals
+        signals.
 
     samp_rate_in : integer
-        Sample rate (frequency) of the input signal(s)
+        Sample rate (frequency) of the input signal(s).
 
     axis : integer (0 or 1, default: 0)
-        Time axis along which to calculate the tonality
+        Time axis along which to calculate the tonality.
 
     soundfield : keyword string (default: 'free_frontal')
         Determines whether the 'free_frontal' or 'diffuse' field stages
@@ -132,70 +132,77 @@ def shm_tonality_ecma(p, samp_rate_in, axis=0, soundfield='free_frontal',
 
     wait_bar : keyword string (default: True)
         Determines whether a progress bar displays during processing
-        (set wait_bar to false for doing multi-file parallel calculations)
+        (set wait_bar to false for doing multi-file parallel calculations).
 
     out_plot : Boolean (default: False)
         Flag indicating whether to generate a figure from the output
-        (set out_plot to false for doing multi-file parallel calculations)
+        (set out_plot to false for doing multi-file parallel calculations).
+
+    parallel_cores : integer or None (default: None)
+        Number of parallel cores to use for processing
+        (if None, the number of cores is automatically determined based
+        on the number of available CPU cores; for multicore systems,
+        1 core is always left free, to avoid system freeze.
+        If 1, parallel processing is not applied).
 
     Returns
     -------
     tonality : dict
-        Contains the output
+        Contains the output.
 
     tonality contains the following outputs:
 
     spec_tonality : 2D or 3D array
         Time-dependent specific tonality for each critical band
-        arranged as [time, bands(, channels)]
+        arranged as [time, bands(, channels)].
 
     spec_tonality_freqs : 2D or 3D array
         Time-dependent frequencies of the dominant tonal
         components corresponding with each of the
         time-dependent specific tonality values in each
-        (half) critical band arranged as [time, bands(, channels)]
+        (half) critical band arranged as [time, bands(, channels)].
 
     spec_tonality_avg : 1D or 2D array
         Time-averaged specific tonality for each critical band
-        arranged as [bands(, channels)]
+        arranged as [bands(, channels)].
 
     spec_tonality_avg_freqs : 1D or 2D array
         Frequencies of the dominant tonal components
         corresponding with each of the
         time-averaged specific tonality values in each
-        (half) critical band arranged as [bands(, channels)]
+        (half) critical band arranged as [bands(, channels)].
 
     spec_tonal_loudness : 2D or 3D array
         Time-dependent specific tonal loudness for each
-        critical band arranged as [time, bands(, channels)]
+        critical band arranged as [time, bands(, channels)].
 
     spec_noise_loudness : 2D or 3D array
         Time-dependent specific noise loudness for each
-        critical band arranged as [time, bands(, channels)]
+        critical band arranged as [time, bands(, channels)].
 
     tonality_t : 1D or 2D array
         Time-dependent overall tonality
-        arranged as [time(, channels)]
+        arranged as [time(, channels)].
 
     tonality_t_freqs : 1D or 2D array
         Time-dependent frequencies of the dominant tonal
         components corresponding with the time-dependent
-        overall tonality values arranged as [time(, channels)]
+        overall tonality values arranged as [time(, channels)].
 
     tonality_avg : 1D or 2D array
         Time-averaged overall tonality
-        arranged as [tonality(, channels)]
+        arranged as [tonality(, channels)].
 
     band_centre_freqs : 1D array
         Centre frequencies corresponding with each critical
-        band rate
+        band rate.
 
     time_out : 1D array
-        Time (seconds) corresponding with time-dependent outputs
+        Time (seconds) corresponding with time-dependent outputs.
 
     soundfield : string
         Identifies the soundfield type applied (== input argument
-        soundfield)
+        soundfield).
 
     If out_plot=True, a set of plots is returned illustrating the energy
     time-averaged A-weighted sound level, the time-dependent specific and
@@ -210,7 +217,9 @@ def shm_tonality_ecma(p, samp_rate_in, axis=0, soundfield='free_frontal',
     """
     # %% Input checks
     p, chans_in, chans = shm_in_check(p, samp_rate_in, axis,
-                                      soundfield, wait_bar, out_plot)
+                                      soundfield, wait_bar, out_plot,
+                                      binaural=None,
+                                      parallel_cores=parallel_cores)
 
     # %% Define constants
 
@@ -295,9 +304,18 @@ def shm_tonality_ecma(p, samp_rate_in, axis=0, soundfield='free_frontal',
                                                  np.arange(25, 34),
                                                  np.arange(34, 62)))))
 
-    # Determine number of threads to use
-    n_threads = min(n_bands, num_threads)  # number of threads to use in parallel
-    
+    # Determine number of cores to use
+    if parallel_cores is None:
+        # number of cores to use in parallel processing
+        n_cores = max(1, min(n_bands, num_cores))
+
+    elif parallel_cores > 1:
+        n_cores = max(1, min(n_bands, num_cores, parallel_cores))
+
+    else:
+        n_cores = 1  # no parallel processing
+
+
     # %% Signal processing
 
     # Input pre-processing
@@ -361,19 +379,30 @@ def shm_tonality_ecma(p, samp_rate_in, axis=0, soundfield='free_frontal',
         else:
             band_acf_iter = range(61)
 
-        # pre-allocate arrays
-        # basisLoudnessArray = np.empty(61, dtype=object)
+        # pre-allocate array
         unbiased_norm_acf_dupe = np.empty(61, dtype=object)
 
-        with ThreadPoolExecutor(max_workers=n_threads) as executor:
-            futures = [executor.submit(shm_band_auto_correlation, z_band,
-                                       band_centre_freqs_dupe,
-                                       block_size_dupe, overlap, pn_omz_dupe)
-                       for z_band in band_acf_iter]
+        if n_cores > 1:
+            with ThreadPoolExecutor(max_workers=n_cores) as executor:
+                futures = [executor.submit(shm_band_auto_correlation, z_band,
+                                           band_centre_freqs_dupe,
+                                           block_size_dupe, overlap, pn_omz_dupe)
+                           for z_band in band_acf_iter]
 
-        for future in as_completed(futures):
-            z_band, unbiased_norm_acf_dupe_band = future.result()
-            unbiased_norm_acf_dupe[z_band] = unbiased_norm_acf_dupe_band
+            for future in as_completed(futures):
+                z_band, unbiased_norm_acf_dupe_band = future.result()
+                unbiased_norm_acf_dupe[z_band] = unbiased_norm_acf_dupe_band
+
+        else:  # no parallel processing: run in loop to save memory
+            for z_band in band_acf_iter:
+                (z_band,
+                 unbiased_norm_acf_dupe_band) = shm_band_auto_correlation(z_band,
+                                                                          band_centre_freqs_dupe,
+                                                                          block_size_dupe,
+                                                                          overlap,
+                                                                          pn_omz_dupe)
+
+                unbiased_norm_acf_dupe[z_band] = unbiased_norm_acf_dupe_band
 
         # Average the ACF over nB bands - Section 6.2.3 ECMA-418-2:2025
         if wait_bar:
@@ -382,19 +411,37 @@ def shm_tonality_ecma(p, samp_rate_in, axis=0, soundfield='free_frontal',
         else:
             band_acf_avg_iter = range(n_bands)
 
-        with ThreadPoolExecutor(max_workers=n_threads) as executor:
-            futures = [executor.submit(shm_band_loud_components, z_band,
-                                       band_centre_freqs,
-                                       block_size, end_block, dfz,
-                                       unbiased_norm_acf_dupe, i_num_bands_avg_dupe)
-                       for z_band in band_acf_avg_iter]
+        if n_cores > 1:
+            with ThreadPoolExecutor(max_workers=n_cores) as executor:
+                futures = [executor.submit(shm_band_loud_components, z_band,
+                                           band_centre_freqs,
+                                           block_size, end_block, dfz,
+                                           unbiased_norm_acf_dupe,
+                                           i_num_bands_avg_dupe)
+                           for z_band in band_acf_avg_iter]
 
-        for future in as_completed(futures):
-            (z_band, band_tonal_loudness,
-             band_noise_loudness, band_tonal_freqs) = future.result()
-            spec_tonal_loudness[:, z_band, chan] = band_tonal_loudness
-            spec_noise_loudness[:, z_band, chan] = band_noise_loudness
-            spec_tonality_freqs[:, z_band, chan] = band_tonal_freqs
+            for future in as_completed(futures):
+                (z_band, band_tonal_loudness,
+                 band_noise_loudness, band_tonal_freqs) = future.result()
+
+                spec_tonal_loudness[:, z_band, chan] = band_tonal_loudness
+                spec_noise_loudness[:, z_band, chan] = band_noise_loudness
+                spec_tonality_freqs[:, z_band, chan] = band_tonal_freqs
+        
+        else:  # no parallel processing: run in loop to save memory
+            for z_band in band_acf_avg_iter:
+                (z_band, band_tonal_loudness,
+                 band_noise_loudness,
+                 band_tonal_freqs) = shm_band_loud_components(z_band,
+                                                              band_centre_freqs,
+                                                              block_size,
+                                                              end_block, dfz,
+                                                              unbiased_norm_acf_dupe,
+                                                              i_num_bands_avg_dupe)
+                
+                spec_tonal_loudness[:, z_band, chan] = band_tonal_loudness
+                spec_noise_loudness[:, z_band, chan] = band_noise_loudness
+                spec_tonality_freqs[:, z_band, chan] = band_tonal_freqs
 
         # end of ACF averaging over bands
         
@@ -573,28 +620,28 @@ def shm_band_auto_correlation(z_band, band_centre_freqs, block_size_bands,
     Inputs
     ------
     z_band : integer
-        Input critical band index
+        Input critical band index.
 
     band_centre_freqs : array of floats
-        Centre frequencies of the critical bands
+        Centre frequencies of the critical bands.
 
     block_size_bands : array of integers
-        Block size in samples for each critical band
+        Block size in samples for each critical band.
 
     overlap : float
-        Proportion of overlap
+        Proportion of overlap.
 
     signal_bands : 2D array
-        Input critical bandpass-filtered signals
+        Input critical bandpass-filtered signals.
 
     Returns
     -------
     z_band : integer
-        Input critical band index as output
+        Input critical band index as output.
 
     unbiased_norm_band_acf : 2D array
         Unbiased and normalised estimate of the autocorrelation
-        function in the corresponding critical band
+        function in the corresponding critical band.
 
     """
 
@@ -658,39 +705,40 @@ def shm_band_loud_components(z_band, band_centre_freqs, block_size_bands,
     Parameters
     ----------
     z_band : integer
-        Input critical band index
+        Input critical band index.
 
     band_centre_freqs : array of floats
-        Centre frequencies of the critical bands
+        Centre frequencies of the critical bands.
 
     block_size_bands : array of integers
-        Block size in samples for each critical band
+        Block size in samples for each critical band.
 
     last_block : integer
-        Index of the last block
+        Index of the last block.
 
     dfz : 1D array of floats
-        Bandwidths of the critical bands
+        Bandwidths of the critical bands.
 
     unbiased_norm_acf : 2D array
         Unbiased and normalised estimate of the autocorrelation
-        function in the corresponding critical band
+        function in the corresponding critical band.
 
     i_num_bands_avg : 2D array of integers
-        Indices for averaging adjacent critical bands
+        Indices for averaging adjacent critical bands.
 
     Returns
     -------
     z_band : integer
         Input critical band index as output
+
     band_tonal_loudness : 2D array
-        Specific loudness of the tonal component in the critical band
+        Specific loudness of the tonal component in the critical band.
 
     band_noise_loudness : 2D array
-        Specific loudness of the noise component in the critical band
+        Specific loudness of the noise component in the critical band.
 
     band_tonal_freqs : 2D array
-        Time-dependent frequencies of the tonal components in the critical band
+        Time-dependent frequencies of the tonal components in the critical band.
 
     """
 
@@ -861,15 +909,15 @@ def shm_noise_red_lowpass(signal, samp_rate_in):
     ----------
     signal : 1D or 2D matrix
         Input signal as single mono or stereo audio (sound
-        pressure) signals
+        pressure) signals.
 
     samp_rate_in : double
-        Sample rate (frequency) of the input signal(s)
+        Sample rate (frequency) of the input signal(s).
 
     Returns
     -------
     signal_filtered : 1D or 2D matrix
-        Filtered signal/s
+        Filtered signal/s.
 
     Assumptions
     -----------

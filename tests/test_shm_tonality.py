@@ -17,7 +17,7 @@ Author: Mike JB Lotinga (m.j.lotinga@edu.salford.ac.uk)
 Institution: University of Salford
 
 Date created: 02/10/2025
-Date last modified: 23/10/2025
+Date last modified: 02/03/2026
 Python version: 3.11
 
 Copyright statement: This code has been developed during work undertaken within
@@ -75,3 +75,14 @@ def test_shm_tonality_44k():
     assert np.all(tonality['spec_tonality'][87:, 17] == pytest.approx(1.0, abs=1e-3))
     assert np.all(tonality['tonality_t_freqs'][57:] == pytest.approx(1000, abs=1))
     assert np.all(tonality['spec_tonality_freqs'][57:, 17] == pytest.approx(1000, abs=1))
+
+
+# %% test parallel_cores argument is working
+def test_shm_tonality_parallel_cores():
+    tonality_ref_signal, _, _ = shm_generate_ref_signals(5)
+
+    tonality_serial = shm_tonality_ecma(p=tonality_ref_signal, samp_rate_in=48e3,
+                                        axis=0, soundfield='free_frontal',
+                                        wait_bar=False, out_plot=False, parallel_cores=1)
+
+    assert tonality_serial['tonality_avg'] == pytest.approx(1.0, abs=1e-4)

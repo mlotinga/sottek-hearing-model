@@ -73,15 +73,18 @@ roughness = shm_roughness_ecma(p=sine_1kHz_70Hz_60dB,
 
 The third reference signal generated above (`sine_1kHz_4Hz_60dB`) corresponds with the fluctuation strength metric. This metric will be added to the package in a future release.
 
+By default, the functions make use of available parallel processing resources for efficient calculations. For user control of this feature, or if memory overflow issues are encountered (see [link](memory-limitations)), parallel processing can be disabled or controlled using the input argument `parallel_cores`. Setting `parallel_cores=1` will disable parallel processing, while setting `parallel_cores` to another positive integer value will set the processing to use the specified number of parallel workers (to avoid system freeze, in a multicore system, the number actually used is always capped by the number of available cores minus 1).
+
 ## Known issues
 
-The signal duration that can be processed is limited by user RAM, since the whole signal is loaded for processing at once. There is also a known [memory overflow issue](https://github.com/mlotinga/sottek-hearing-model/issues/2) for longer signals (caused by the inclusion of parallel processing to speed up the analysis), which currently limits signal durations to around 30 seconds. For longer signals, the existing MATLAB implementation could be used instead: [https://github.com/acoustics-code-salford/refmap-psychoacoustics/tree/main/src/mlab/ECMA_418-2](https://github.com/acoustics-code-salford/refmap-psychoacoustics/tree/main/src/mlab/ECMA_418-2).
+### Memory limitations
+
+The signal duration that can be processed is limited by user RAM, since the whole signal is loaded for processing at once, and the algorithms create multi-dimensional arrays for efficiency in calculation. For longer signals, or on systems with relatively small RAM allocation, memory overflows might occur. The `parallel_cores` argument can be used to reduce the concurrent memory demand on the system. Very long signals may need to be analysed in discrete segments.
 
 ## How to cite
 The algorithms in this package were initially translated to Python from the MATLAB codes published alongside the following paper: 
 
 > Lotinga, M. J. B., Torjussen, M., & Felix Greco, G. (2025). Verified implementations of the Sottek psychoacoustic Hearing Model standardised sound quality metrics (ECMA-418-2 loudness, tonality and roughness). Proceedings of Forum Acusticum / Euronoise, Malaga, Spain, 23–26 June 2025. [https://www.researchgate.net/publication/392904348](https://www.researchgate.net/publication/392904348)
-
 
 
 BibTeX:
