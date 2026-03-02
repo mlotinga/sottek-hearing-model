@@ -37,7 +37,7 @@ Author: Mike JB Lotinga (m.j.lotinga@edu.salford.ac.uk)
 Institution: University of Salford
 
 Date created: 29/05/2023
-Date last modified: 23/10/2025
+Date last modified: 02/03/2026
 Python version: 3.11
 
 Copyright statement: This code has been developed during work undertaken within
@@ -98,13 +98,15 @@ plt.rc('legend', fontsize=16)  # legend fontsize
 plt.rc('figure', titlesize=24)  # fontsize of the figure title
 
 # parallel processing cpu cores
-num_threads = max(1, multiprocessing.cpu_count() - 1)  # leave one free core
+num_cores = max(1, multiprocessing.cpu_count() - 1)  # leave one free core
 
 # %% shm_roughness_ecma
 def shm_roughness_ecma(p, samp_rate_in, axis=0, soundfield='free_frontal',
-                       wait_bar=True, out_plot=False, binaural=True):
+                       wait_bar=True, out_plot=False, binaural=True,
+                       parallel_cores=None):
     """shm_roughness_ecma(p, samp_rate_in, axis=0, soundfield='free_frontal',
-                          wait_bar=True, out_plot=False, binaural=True)
+                          wait_bar=True, out_plot=False, binaural=True,
+                          parallel_cores=None)
 
     Returns roughness values according to ECMA-418-2:2025 using the Sottek Hearing
     Model) for input audio signal.
@@ -132,49 +134,56 @@ def shm_roughness_ecma(p, samp_rate_in, axis=0, soundfield='free_frontal',
 
     wait_bar : keyword string (default: true)
         Determines whether a progress bar displays during processing
-        (set wait_bar to false for doing multi-file parallel calculations)
+        (set wait_bar to false for doing multi-file parallel calculations).
 
     out_plot : Boolean (default: False)
         Flag indicating whether to generate a figure from the output
-        (set out_plot to false for doing multi-file parallel calculations)
+        (set out_plot to false for doing multi-file parallel calculations).
 
     binaural : Boolean (default: True)
         Flag indicating whether to output combined binaural roughness
-        for stereo input signal
+        for stereo input signal.
+
+    parallel_cores : integer or None (default: None)
+        Number of parallel cores to use for processing
+        (if None, the number of cores is automatically determined based
+        on the number of available CPU cores; for multicore systems,
+        1 core is always left free, to avoid system freeze.
+        If 1, parallel processing is not applied).
 
     Returns
     -------
     roughness : dict
-        Contains the output
+        Contains the output.
 
     roughness contains the following outputs:
 
     spec_roughness : 2d or 3d array
         Time-dependent specific roughness for each critical band
-        arranged as [time, bands(, channels)]
+        arranged as [time, bands(, channels)].
 
     spec_roughness_avg : 1d or 2d array
         Time-averaged specific roughness for each critical band
-        arranged as [bands(, channels)]
+        arranged as [bands(, channels)].
 
     roughness_t : 1d or 2d array
         Time-dependent overall roughness
-        arranged as [time(, channels)]
+        arranged as [time(, channels)].
 
     roughness90pc : 1d or 2d array
         time-aggregated (90th percentile) overall roughness
-        arranged as [roughness(, channels)]
+        arranged as [roughness(, channels)].
 
     band_centre_freqs : 1d array
         Centre frequencies corresponding with each critical band
-        rate
+        rate.
 
     time_out : 1d array
-        Time (seconds) corresponding with time-dependent outputs
+        Time (seconds) corresponding with time-dependent outputs.
 
     soundfield : keyword string
         Identifies the soundfield type applied (the input argument
-        soundfield)
+        soundfield).
 
     If out_plot=True, a set of plots is returned illustrating the energy
     time-averaged A-weighted sound level, the time-dependent specific and
@@ -293,9 +302,17 @@ def shm_roughness_ecma(p, samp_rate_in, axis=0, soundfield='free_frontal',
     # Footnote 14 (/0 epsilon)
     epsilon = 1e-12
 
-    # Determine number of threads to use
-    n_threads = min(n_bands, num_threads)  # number of threads to use in parallel
-    
+    # Determine number of cores to use
+    if parallel_cores is None:
+        # number of cores to use in parallel processing
+        n_cores = max(1, min(n_bands, num_cores))
+
+    elif parallel_cores > 1:
+        n_cores = max(1, min(n_bands, num_cores, parallel_cores))
+
+    else:
+        n_cores = parallel_cores  # no parallel processing
+
     # %% Signal processing
 
     # Input pre-processing
@@ -366,19 +383,31 @@ def shm_roughness_ecma(p, samp_rate_in, axis=0, soundfield='free_frontal',
         else:
             band_iter = range(n_bands)
 
-        with ThreadPoolExecutor(max_workers=n_threads) as executor:
-            futures = [executor.submit(shm_envelopes, z_band, block_size,
-                                       overlap, i_start,
-                                       band_centre_freqs[z_band],
-                                       pn_omz[:, z_band])
-                       for z_band in band_iter]
+        if n_cores > 1:
+            with ThreadPoolExecutor(max_workers=n_cores) as executor:
+                futures = [executor.submit(shm_envelopes, z_band, block_size,
+                                           overlap, i_start,
+                                           band_centre_freqs[z_band],
+                                           pn_omz[:, z_band])
+                           for z_band in band_iter]
 
-        for future in as_completed(futures):
-            (z_band, l_blocks_out,
-             band_basis_loudness,
-             band_envelopes) = future.result()
-            basis_loudness[:, z_band] = band_basis_loudness
-            envelopes[:, :, z_band] = band_envelopes
+            for future in as_completed(futures):
+                (z_band, l_blocks_out,
+                 band_basis_loudness,
+                 band_envelopes) = future.result()
+
+                basis_loudness[:, z_band] = band_basis_loudness
+                envelopes[:, :, z_band] = band_envelopes
+        
+        else:  # no parallel processing: run in loop to save memory
+            for z_band in band_iter:
+                (z_band, l_blocks_out,
+                 band_basis_loudness,
+                 band_envelopes) = shm_envelopes(z_band, block_size, overlap, i_start,
+                                                 band_centre_freqs[z_band], pn_omz[:, z_band])
+
+                basis_loudness[:, z_band] = band_basis_loudness
+                envelopes[:, :, z_band] = band_envelopes
 
         # Note: With downsampled envelope signals, fully vectorised approach can continue
 
@@ -471,18 +500,33 @@ def shm_roughness_ecma(p, samp_rate_in, axis=0, soundfield='free_frontal',
 
         block_iter = range(n_blocks)
 
-        with ThreadPoolExecutor(max_workers=n_threads) as executor:
-            futures = [executor.submit(shm_spectral_weight, z_band, l_block,
-                                       error_correction, res_dft1500, theta,
-                                       mod_weight_spectra_avg[:, l_block, z_band])
-                       for z_band in band_iter for l_block in block_iter]
+        if n_cores > 1:
+            with ThreadPoolExecutor(max_workers=n_cores) as executor:
+                futures = [executor.submit(shm_spectral_weight, z_band, l_block,
+                                           error_correction, res_dft1500, theta,
+                                           mod_weight_spectra_avg[:, l_block, z_band])
+                           for z_band in band_iter for l_block in block_iter]
 
-        for future in as_completed(futures):
-            (z_band, l_block,
-             mod_amp_band_block,
-             mod_rate_band_block) = future.result()
-            mod_amp[:, l_block, z_band] = mod_amp_band_block
-            mod_rate[:, l_block, z_band] = mod_rate_band_block
+            for future in as_completed(futures):
+                (z_band, l_block,
+                 mod_amp_band_block,
+                 mod_rate_band_block) = future.result()
+
+                mod_amp[:, l_block, z_band] = mod_amp_band_block
+                mod_rate[:, l_block, z_band] = mod_rate_band_block
+        
+        else:  # no parallel processing: run in loop to save memory
+            for z_band in band_iter:
+                for l_block in block_iter:
+                    (z_band, l_block,
+                     mod_amp_band_block,
+                     mod_rate_band_block) = shm_spectral_weight(z_band, l_block,
+                                                                error_correction,
+                                                                res_dft1500, theta,
+                                                                mod_weight_spectra_avg[:, l_block, z_band])
+
+                    mod_amp[:, l_block, z_band] = mod_amp_band_block
+                    mod_rate[:, l_block, z_band] = mod_rate_band_block
 
         # Section 7.1.5.2 ECMA-418-2:2025 - Weighting for high modulation rates
         # Equation 85 [G_l,z,i(f_p,i(l,z))]
@@ -514,18 +558,32 @@ def shm_roughness_ecma(p, samp_rate_in, axis=0, soundfield='free_frontal',
 
         block_iter = range(n_blocks)
 
-        with ThreadPoolExecutor(max_workers=n_threads) as executor:
-            futures = [executor.submit(shm_fundamental_mod_rate, z_band, l_block,
-                                       mod_rate[:, l_block, z_band],
-                                       mod_amp_hi_weight[:, l_block, z_band])
-                       for z_band in band_iter for l_block in block_iter]
+        if n_cores > 1:
+            with ThreadPoolExecutor(max_workers=n_cores) as executor:
+                futures = [executor.submit(shm_fundamental_mod_rate, z_band, l_block,
+                                           mod_rate[:, l_block, z_band],
+                                           mod_amp_hi_weight[:, l_block, z_band])
+                           for z_band in band_iter for l_block in block_iter]
 
-        for future in as_completed(futures):
-            (z_band, l_block,
-             mod_fund_rate_band_block,
-             mod_max_weight_band_block) = future.result()
-            mod_fund_rate[l_block, z_band] = mod_fund_rate_band_block
-            mod_max_weight[:, l_block, z_band] = mod_max_weight_band_block
+            for future in as_completed(futures):
+                (z_band, l_block,
+                 mod_fund_rate_band_block,
+                 mod_max_weight_band_block) = future.result()
+
+                mod_fund_rate[l_block, z_band] = mod_fund_rate_band_block
+                mod_max_weight[:, l_block, z_band] = mod_max_weight_band_block
+            
+        else:  # no parallel processing: run in nested loop to save memory
+            for z_band in band_iter:
+                for l_block in block_iter:
+                    (z_band, l_block,
+                     mod_fund_rate_band_block,
+                     mod_max_weight_band_block) = shm_fundamental_mod_rate(z_band, l_block,
+                                                                           mod_rate[:, l_block, z_band],
+                                                                           mod_amp_hi_weight[:, l_block, z_band])
+
+                    mod_fund_rate[l_block, z_band] = mod_fund_rate_band_block
+                    mod_max_weight[:, l_block, z_band] = mod_max_weight_band_block
 
         # Equation 95 [A(l,z)]
         rough_lo_weight = shm_mod_weight(mod_fund_rate, mod_freq_max_weight,
@@ -734,36 +792,36 @@ def shm_envelopes(z_band, block_size, overlap,
     Parameters
     ----------
     z_band : int
-        Critical band index
+        Critical band index.
 
     block_size : int
-        Block size for segmentation
+        Block size for segmentation.
 
     overlap : int
-        Overlap size for segmentation
+        Overlap size for segmentation.
 
     i_start : int
-        Start index for segmentation
+        Start index for segmentation.
 
     band_centre_freq : number
-        Centre frequency for critical band
+        Centre frequency for critical band.
 
     pn_omz_band : 1D array
-        Output of outer/middle ear processing for given critical band
+        Output of outer/middle ear processing for given critical band.
 
     Returns
     -------
     z_band : int
-        Critical band index
+        Critical band index.
 
     l_blocks_out : 1D array
-        Time block indices for segmented envelopes
+        Time block indices for segmented envelopes.
 
     band_basis_loudness : 2D array
-        Basis loudness for segmented signal in given critical band
+        Basis loudness for segmented signal in given critical band.
 
     band_envelopes : 2D array
-        Downsampled envelopes for segmented signal in given critical band
+        Downsampled envelopes for segmented signal in given critical band.
 
     """
 
@@ -807,37 +865,37 @@ def shm_spectral_weight(z_band, l_block, error_correction, res_dft1500, theta, m
     ----------
     
     z_band : int
-        Critical band index
+        Critical band index.
 
     l_block : int
-        Time block index
+        Time block index.
 
     error_correction : float
-        Error correction factors from table 10 of ECMA-418-2:2025
+        Error correction factors from table 10 of ECMA-418-2:2025.
 
     res_dft1500 : float
-        Resolution of the DFT at 1500 Hz sampling rate
+        Resolution of the DFT at 1500 Hz sampling rate.
 
     theta : range
-        Indices for error correction factors from table 10 of ECMA-418-2:2025
+        Indices for error correction factors from table 10 of ECMA-418-2:2025.
 
     mod_weight_spectra_avg_band_block : 1D array
         Averaged weighted modulation amplitude spectra for the current band
-        and block
+        and block.
 
     Returns
     -------
     z_band : int
-            Critical band index
+            Critical band index.
 
     l_block : int
-             Time block index
+             Time block index.
     
     modAmpBandBlock : 1D array
-                      Modulation amplitudes for the current band and block
+                      Modulation amplitudes for the current band and block.
 
     modRateBandBlock : 1D array
-                       Modulation rates for the current band and block
+                       Modulation rates for the current band and block.
 
     """
 
@@ -964,24 +1022,24 @@ def shm_fundamental_mod_rate(z_band, l_block, mod_rate_band_block, mod_amp_hi_we
     Parameters
     ----------
     z_band : int
-        Critical band index
+        Critical band index.
 
     l_block : int
-        Time block index
+        Time block index.
 
     mod_rate_band_block : 1D array
-        Modulation rates for each critical band and time block
+        Modulation rates for each critical band and time block.
 
     mod_weight_spectra_avg_band_block : 1D array
-        Weighted, averaged modulation spectra for each critical band and time block
+        Weighted, averaged modulation spectra for each critical band and time block.
 
     Returns
     -------
     mod_fund_rate_block_band : float
-        Fundamental modulation rate for each time block and critical band
+        Fundamental modulation rate for each time block and critical band.
 
     mod_max_weight_block_band : 1D array
-        Modulation amplitudes for each band and block
+        Modulation amplitudes for each band and block.
     """
 
     # %% Define constants

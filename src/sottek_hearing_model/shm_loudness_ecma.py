@@ -40,7 +40,7 @@ Author: Mike JB Lotinga (m.j.lotinga@edu.salford.ac.uk)
 Institution: University of Salford
 
 Date created: 29/05/2023
-Date last modified: 20/11/2025
+Date last modified: 02/03/2026
 Python version: 3.11
 
 Copyright statement: This code has been developed during work undertaken within
@@ -85,9 +85,11 @@ plt.rc('figure', titlesize=20)  # fontsize of the figure title
 
 # %% shm_loudness_ecma
 def shm_loudness_ecma(p, samp_rate_in, axis=0, soundfield='free_frontal',
-                      wait_bar=True, out_plot=False, binaural=True):
+                      wait_bar=True, out_plot=False, binaural=True,
+                      parallel_cores=1):
     """shm_loudness_ecma(p, samp_rate_in, axis=0, soundfield='free_frontal',
-                      wait_bar=True, out_plot=False, binaural=True)
+                         wait_bar=True, out_plot=False, binaural=True,
+                         parallel_cores=1)
 
     Returns loudness values according to ECMA-418-2:2025 (using the Sottek Hearing
     Model) for input audio signal.
@@ -115,56 +117,63 @@ def shm_loudness_ecma(p, samp_rate_in, axis=0, soundfield='free_frontal',
 
     wait_bar : keyword string (default: True)
         Determines whether a progress bar displays during processing
-        (set wait_bar to false for doing multi-file parallel calculations)
+        (set wait_bar to false for doing multi-file parallel calculations).
 
     out_plot : Boolean (default: False)
         Flag indicating whether to generate a figure from the output
-        (set out_plot to false for doing multi-file parallel calculations)
+        (set out_plot to false for doing multi-file parallel calculations).
 
     binaural : Boolean (default: True)
         Flag indicating whether to output combined binaural loudness for
-        stereo input signal
+        stereo input signal.
+
+    parallel_cores : integer or None (default: None)
+        Number of parallel cores to use for processing
+        (if None, the number of cores is automatically determined based
+        on the number of available CPU cores; for multicore systems,
+        1 core is always left free, to avoid system freeze.
+        If 1, parallel processing is not applied).
 
     Returns
     -------
     loudness : dict
-        Contains the output
+        Contains the output.
 
     loudness contains the following outputs:
 
     spec_loudness : 2D or 3D array
         Time-dependent specific loudness for each critical band
-        arranged as [time, bands(, channels)]
+        arranged as [time, bands(, channels)].
 
     spec_loudness_powavg : 1D or 2D array
         Time-averaged specific loudness for each critical band
-        arranged as [bands(, channels)]
+        arranged as [bands(, channels)].
 
     spec_tonal_loudness : 2D or 3D array
         Time-dependent specific tonal loudness for each
-        critical band arranged as [time, bands(, channels)]
+        critical band arranged as [time, bands(, channels)].
 
     spec_noise_loudness : 2D or 3D array
         Time-dependent specific noise loudness for each
-        critical band arranged as [time, bands(, channels)]
+        critical band arranged as [time, bands(, channels)].
 
     loudness_t : 1D or 2D array
         Time-dependent overall loudness
-        arranged as [time(, channels)]
+        arranged as [time(, channels)].
 
     loudness_powavg : 1D or 2D array
         Time-averaged overall loudness
-        arranged as [loudness(, channels)]
+        arranged as [loudness(, channels)].
 
     band_centre_freqs : 1D array
-        Centre frequencies corresponding with each critical band rate
+        Centre frequencies corresponding with each critical band rate.
 
     time_out : 1D array
-        Time (seconds) corresponding with time-dependent outputs
+        Time (seconds) corresponding with time-dependent outputs.
 
     soundfield : string
         Identifies the soundfield type applied (the input argument
-        soundfield)
+        soundfield).
 
     If out_plot=True, a set of plots is returned illustrating the energy
     time-averaged A-weighted sound level, the time-dependent specific and
@@ -183,7 +192,7 @@ def shm_loudness_ecma(p, samp_rate_in, axis=0, soundfield='free_frontal',
     # %% Input checks
     p, chans_in, chans = shm_in_check(p, samp_rate_in, axis,
                                       soundfield, wait_bar, out_plot,
-                                      binaural)
+                                      binaural, parallel_cores)
 
     # %% Define constants
 
@@ -231,7 +240,8 @@ def shm_loudness_ecma(p, samp_rate_in, axis=0, soundfield='free_frontal',
     # Obtain tonal and noise component specific loudnesses from Sections 5 & 6 ECMA-418-2:2025
     tonality = shm_tonality_ecma(p_re, samp_rate48k, axis=0,
                                  soundfield=soundfield,
-                                 wait_bar=wait_bar, out_plot=False)
+                                 wait_bar=wait_bar, out_plot=False,
+                                 parallel_cores=parallel_cores)
 
     spec_tonal_loudness = tonality['spec_tonal_loudness']  # [N'_tonal(l,z)]
     spec_noise_loudness = tonality['spec_noise_loudness']  # [N'_noise(l,z)]
@@ -373,7 +383,7 @@ def shm_loudness_ecma(p, samp_rate_in, axis=0, soundfield='free_frontal',
             fig.suptitle(t=(chan_lab + " signal sound pressure level = " +
                             str(shm_round(level_Aeq, 1)) +
                             r" dB $\mathregular{\mathit{L}_{Aeq}}$"))
-            fig.show()
+            show_plot(fig)
         # end of for loop over channels
     # end of if branch for plotting
 
@@ -454,39 +464,39 @@ def shm_loudness_ecma_from_comp(spec_tonal_loudness, spec_noise_loudness,
     Returns
     -------
     loudness : dict
-        Contains the output
+        Contains the output.
 
     loudness contains the following outputs:
 
     spec_loudness : 2D or 3D array
         Time-dependent specific loudness for each critical band
-        arranged as [time, bands(, channels)]
+        arranged as [time, bands(, channels)].
 
     spec_loudness_powavg : 1D or 2D array
         Time-averaged specific loudness for each critical band
-        arranged as [bands(, channels)]
+        arranged as [bands(, channels)].
 
     spec_tonal_loudness : 2D or 3D array
         Time-dependent specific tonal loudness for each
-        critical band arranged as [time, bands(, channels)]
+        critical band arranged as [time, bands(, channels)].
 
     spec_noise_loudness : 2D or 3D array
         Time-dependent specific noise loudness for each
-        critical band arranged as [time, bands(, channels)]
+        critical band arranged as [time, bands(, channels)].
 
     loudness_t : 1D or 2D array
         Time-dependent overall loudness
-        arranged as [time(, channels)]
+        arranged as [time(, channels)].
 
     loudness_powavg : 1D or 2D array
         Time-averaged overall loudness
-        arranged as [loudness(, channels)]
+        arranged as [loudness(, channels)].
 
     band_centre_freqs : 1D array
-        Centre frequencies corresponding with each critical band rate
+        Centre frequencies corresponding with each critical band rate.
 
     time_out : 1D array
-        Time (seconds) corresponding with time-dependent outputs
+        Time (seconds) corresponding with time-dependent outputs.
 
     If out_plot=True, a set of plots is returned illustrating the time-dependent
     specific and overall loudness, with the latter also indicating the
@@ -499,7 +509,7 @@ def shm_loudness_ecma_from_comp(spec_tonal_loudness, spec_noise_loudness,
     -----------
     The input arrays are ECMA-418-2:2025 specific tonal and specific noise
     loudness, with dimensions orientated as [critical bands, time blocks,
-    signal channels]
+    signal channels].
 
     """
     # %% Input checks
@@ -533,6 +543,15 @@ def shm_loudness_ecma_from_comp(spec_tonal_loudness, spec_noise_loudness,
             chans = ["Mono"]
         # end of if branch for more than one channel
     # end of if branch for maximum channel number check
+
+    # Check if out_plot has a valid value
+    if not isinstance(out_plot, bool):
+        raise ValueError("\nInput argument 'outplot' must be logical True/False")
+
+    # Check if binaural has a valid value
+    if binaural is not None:
+        if not isinstance(binaural, bool):
+            raise ValueError("\nInput argument 'binaural' must be logical True/False")
 
     # %% Define constants
 

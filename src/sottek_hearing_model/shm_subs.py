@@ -41,7 +41,7 @@ Author: Mike JB Lotinga (m.j.lotinga@edu.salford.ac.uk)
 Institution: University of Salford
 
 Date created: 27/10/2023
-Date last modified: 23/10/2025
+Date last modified: 02/03/2026
 Python version: 3.11
 
 Copyright statement: This code has been developed during work undertaken within
@@ -92,16 +92,16 @@ def shm_auditory_filtbank(signal, out_plot=False):
     ----------
     signal : 1D or 2D array
         Input signal as single audio (sound pressure) signal/s,
-        arranged as [time(, chans)]
+        arranged as [time(, chans)].
 
     out_plot : Boolean true/false (default: false)
         Flag indicating whether to generate a figure a frequency and
-        phase response figure for the filter bank
+        phase response figure for the filter bank.
 
     Returns
     -------
     signal_filtered : 2D of 3D array
-        Filtered signals, arranged as [time, bands(, chans)]
+        Filtered signals, arranged as [time, bands(, chans)].
 
     Assumptions
     -----------
@@ -229,23 +229,23 @@ def shm_basis_loudness(signal_segmented, band_centre_freq=None):
     Parameters
     ----------
     signal_segmented : 2D or 3D array
-        Input band-limited segmented signal(s)
+        Input band-limited segmented signal(s).
 
     band_centre_freq : double (optional, default: None)
         Critical band centre frequency - if None, all
         bands are assumed to be present in the input segmented
-        signal matrix
+        signal matrix.
 
     Returns
     -------
     signal_rect_seg : 2D or 3D array
-        Rectified band-limited segmented signal
+        Rectified band-limited segmented signal.
     
     basis_loudness : 2D or 3D array
-        Basis loudness in each block
+        Basis loudness in each block.
 
     block_rms : 1D or 2D array
-        RMS for each time block
+        RMS for each time block.
 
     Assumptions
     -----------
@@ -345,7 +345,7 @@ def shm_outmid_ear_filter(signal, soundfield='free_frontal', out_plot=False):
     Parameters
     ----------
     signal : 1D or 2D array
-        Input signal (sound pressure)
+        Input signal (sound pressure).
 
     soundfield: keyword string (default: 'free_frontal')
         Determines whether the 'free_frontal' or 'diffuse' field stages
@@ -358,12 +358,12 @@ def shm_outmid_ear_filter(signal, soundfield='free_frontal', out_plot=False):
 
     out_plot : Boolean true/false (default: false)
         Flag indicating whether to generate a frequency and phase
-        response figure for the filter
+        response figure for the filter.
 
     Returns
     -------
     signal_filtered : 1D or 2D array
-        Output filtered signal
+        Output filtered signal.
 
     Assumptions
     -----------
@@ -492,26 +492,26 @@ def shm_pre_proc(signal, block_size, hop_size, pad_start=True, pad_end=True):
     Parameters
     ----------
     signal : 1D or 2D array
-        Input signal/s
+        Input signal/s.
 
     block_size : integer
-        Maximum signal segmentation block size
+        Maximum signal segmentation block size.
 
     hop_size : integer
         Maximum signal segmentation hop size
-        = (1 - overlap)*block_size
+        = (1 - overlap)*block_size.
 
     pad_start : Boolean (default: True)
-        Flag to indicate whether to pad the start of the signal
+        Flag to indicate whether to pad the start of the signal.
 
     pad_end : Boolean (default: True)
-        Flag to indicate whether to pad the end of the signal
+        Flag to indicate whether to pad the end of the signal.
 
 
     Returns
     -------
     signal_fade_pad : 1D or 2D array
-        Output faded, padded signal
+        Output faded, padded signal.
 
     Assumptions
     -----------
@@ -586,18 +586,18 @@ def shm_resample(signal, samp_rate_in):
     Parameters
     ----------
     signal : 1D or 2D array
-        Input signal
+        Input signal.
 
     samp_rate_in : integer
-        Sample rate (frequency) of the input signal(s)
+        Sample rate (frequency) of the input signal(s).
 
     Returns
     -------
     resampled_signal : array
-        Resampled signal (resampled at 48 kHz)
+        Resampled signal (resampled at 48 kHz).
 
     samp_rate48k : integer
-        Output sample rate (48 kHz)
+        Output sample rate (48 kHz).
 
     Assumptions
     -----------
@@ -663,32 +663,32 @@ def shm_signal_segment_blocks(signal, block_size, overlap=0, i_start=0,
     Parameters
     ----------
     signal : 1D array
-        Input signal
+        Input signal.
 
     block_size : integer
-        Block size in samples
+        Block size in samples.
 
     overlap : double (>=0, < 1, default: 0)
-        Proportion of overlap for each successive block
+        Proportion of overlap for each successive block.
 
     i_start : integer (optional, default: 0)
-        Sample index from which to start the segmented signal
+        Sample index from which to start the segmented signal.
 
     end_shrink : Boolean (optional, default: false)
         Option to include the end of the signal data in a block using
-        increased overlap with the preceding block
+        increased overlap with the preceding block.
 
     Returns
     -------
     signal_trunc :  1D array
-        Truncated signal
+        Truncated signal.
 
     n_blocks_total : integer
-        Total number of blocks to use for signal segmentation
+        Total number of blocks to use for signal segmentation.
 
     excess_signal : Boolean
         Flag indicating whether there is sufficient signal to
-        accommodate an extra block with increased overlap
+        accommodate an extra block with increased overlap.
 
     Assumptions
     -----------
@@ -750,37 +750,37 @@ def shm_signal_segment(signal, block_size, overlap=0, i_start=0,
     Parameters
     ----------
     signal : 1D array
-        Input signal
+        Input signal.
 
     block_size : integer
-        Block size in samples
+        Block size in samples.
 
     overlap : double (>=0, < 1, default: 0)
-        Proportion of overlap for each successive block
+        Proportion of overlap for each successive block.
 
     i_start : integer (optional, default: 0)
-        Sample index from which to start the segmented signal
+        Sample index from which to start the segmented signal.
 
     end_shrink : Boolean (optional, default: false)
         Option to include the end of the signal data in a block using
-        increased overlap with the preceding block
+        increased overlap with the preceding block.
 
     Returns
     -------
     signal_segmented : 2D array
         Segmented signal, arranged by samples (within each
         block) along the axis corresponding with axis 0, and
-        block number along axis 1
+        block number along axis 1.
 
     i_start : integer (optional, default: 0)
-        Sample index from which to start the segmented signal
+        Sample index from which to start the segmented signal.
 
     Also:
 
     i_blocks_out : 1D array
         Indices corresponding with each output block starting
         index (NOTE: the indices corresponding with the input
-        indexing can be recovered by adding i_start to i_blocks_out)
+        indexing can be recovered by adding i_start to i_blocks_out).
 
     Assumptions
     -----------
@@ -885,10 +885,10 @@ def shm_downsample(ndArray, downsample=32):
     Parameters
     ----------
     ndArray : array_like
-        Input array
+        Input array.
 
     downsample : integer
-        Downsampling factor
+        Downsampling factor.
 
     Returns
     -------
@@ -897,7 +897,7 @@ def shm_downsample(ndArray, downsample=32):
 
     Assumptions
     -----------
-    Input ndArray is 1D or 2D with time axis along axis 0
+    Input ndArray is 1D or 2D with time axis along axis 0.
 
     """
 
@@ -924,7 +924,7 @@ def shm_dimensional(ndArray, target_dim=2, where='last'):
     Parameters
     ----------
     ndArray : array_like
-        Input array
+        Input array.
 
     target_dim : integer, optional
         Target number of dimensions. The default is 2.
@@ -940,7 +940,7 @@ def shm_dimensional(ndArray, target_dim=2, where='last'):
 
     Assumptions
     -----------
-    Input is a numpy ndArray
+    Input is a numpy ndArray.
 
     """
 
@@ -976,23 +976,23 @@ def shm_mod_weight(mod_rate, mod_freq_max_weight, weight_params):
     ----------
     mod_rate : 3D array
         Estimated modulation rates used to determine the weighting
-        factors
+        factors.
 
     mod_freq_max_weight : 1D array
         Modulation rate at which the weighting reaches its
-        maximum value (one)
+        maximum value (one).
 
     weight_params : array
-        Parameters for the the weighting functions
+        Parameters for the the weighting functions.
 
     Returns
     -------
     mod_weight : array
-        Weighting values for the input parameters
+        Weighting values for the input parameters.
 
     Assumptions
     -----------
-    Inputs are in compatible parallelised (broadcastable) forms
+    Inputs are in compatible parallelised (broadcastable) forms.
 
     """
     # Equation 85 [G_l,z,i(f_p,i(l,z))]
@@ -1020,23 +1020,24 @@ def shm_mod_lowpass(spec_modulation, samp_rate, rise_time, fall_time):
     Parameters
     ----------
     spec_modulation : 2D array
-        Input specific modulation (roughness or fluctuation strength)
+        Input specific modulation (roughness or fluctuation strength).
 
     samp_rate : double
-        Sample rate (frequency) of the input specific modulation (NB: this is not the original signal sample
-        rate; currently it should be set to 50 Hz)
+        Sample rate (frequency) of the input specific modulation
+        (NB: this is not the original signal sample
+        rate; currently it should be set to 50 Hz).
 
     rise_time : double
-        Rise time constant (s) for the low-pass filter
+        Rise time constant (s) for the low-pass filter.
 
     fall_time : double
-        Fall time constant (s) for the low-pass filter
+        Fall time constant (s) for the low-pass filter.
 
     Returns
     -------
     spec_modulation : 2D array
         Low-pass filtered specific modulation
-        (roughness or fluctuation strength)
+        (roughness or fluctuation strength).
 
     Assumptions
     -----------
@@ -1136,9 +1137,9 @@ def shm_rms(vals, axis=0, keepdims=False):
 
 # %% shm_in_check
 def shm_in_check(signal, samp_rate_in, axis, soundfield,
-                 wait_bar, out_plot, binaural=None):
+                 wait_bar, out_plot, binaural=None, parallel_cores=None):
     """shm_in_check(signal, samp_rate_in, axis, soundfield,
-                    wait_bar, out_plot, binaural=None)
+                    wait_bar, out_plot, binaural=None, parallel_cores=None)
 
     Input checking and error handling function.
 
@@ -1147,13 +1148,13 @@ def shm_in_check(signal, samp_rate_in, axis, soundfield,
 
     signal : 1D or 2D array
         Input signal as single mono or stereo audio (sound
-        pressure) signals
+        pressure) signals.
 
     samp_rate_in : integer
-        Sample rate (frequency) of the input signal(s)
+        Sample rate (frequency) of the input signal(s).
 
     axis : integer (0 or 1, default: 0)
-        Time axis along which to calculate the sound quality metric
+        Time axis along which to calculate the sound quality metric.
 
     soundfield : keyword string (default: 'free_frontal')
         Determines whether the 'free_frontal' or 'diffuse' field stages
@@ -1166,28 +1167,35 @@ def shm_in_check(signal, samp_rate_in, axis, soundfield,
 
     wait_bar : keyword string (default: True)
         Determines whether a progress bar displays during processing
-        (set wait_bar to false for doing multi-file parallel calculations)
+        (set wait_bar to false for doing multi-file parallel calculations).
 
     out_plot : Boolean (default: False)
         Flag indicating whether to generate a figure from the output
-        (set out_plot to false for doing multi-file parallel calculations)
+        (set out_plot to false for doing multi-file parallel calculations).
 
     binaural : None or Boolean (default: True)
         Flag indicating whether to output combined binaural sound
         quality for stereo input signal. If None, this variable will
         not be checked.
 
+    parallel_cores : integer or None (default: None)
+        Number of parallel cores to use for processing
+        (if None, the number of cores is automatically determined based
+        on the number of available CPU cores; for multicore systems,
+        1 core is always left free, to avoid system freeze.
+        If 1, parallel processing is not applied).
+
     Returns
     -------
     signal : 1D or 2D array
         Input signal as single mono or stereo audio (sound
-        pressure) signals, orientated to ensure time is on the first axis
+        pressure) signals, orientated to ensure time is on the first axis.
 
     chans_in : integer
-        Number of input channels
+        Number of input channels.
 
     chans : list of strings
-        Text labels indicating the input signal channels
+        Text labels indicating the input signal channels.
 
     """
 
@@ -1251,6 +1259,19 @@ def shm_in_check(signal, samp_rate_in, axis, soundfield,
     if binaural is not None:
         if not isinstance(binaural, bool):
             raise ValueError("\nInput argument 'binaural' must be logical True/False")
+        
+    # Check if parallel_cores has a valid value
+    if parallel_cores is not None:
+        try:
+            # check if parallel_cores is an integer
+            if not isinstance(parallel_cores, int):
+                raise TypeError("\nInput argument 'parallel_cores' must be a positive integer or None.")
+
+            if parallel_cores < 1:
+                raise ValueError("\nInput argument 'parallel_cores' must be a positive integer or None.")
+
+        except TypeError:
+            raise TypeError("\nInput argument 'parallel_cores' must be a positive integer or None.")
 
     return signal, chans_in, chans
 # end of shm_in_check function

@@ -17,7 +17,7 @@ Author: Mike JB Lotinga (m.j.lotinga@edu.salford.ac.uk)
 Institution: University of Salford
 
 Date created: 02/10/2025
-Date last modified: 23/10/2025
+Date last modified: 02/03/2026
 Python version: 3.11
 
 Copyright statement: This code has been developed during work undertaken within
@@ -47,7 +47,8 @@ def test_shm_loudness():
 
     loudness = shm_loudness_ecma(p=loudness_ref_signal, samp_rate_in=48e3,
                                  axis=1, soundfield='free_frontal',
-                                 wait_bar=False, out_plot=False, binaural=True)
+                                 wait_bar=False, out_plot=False,
+                                 binaural=True, parallel_cores=None)
 
     assert loudness['loudness_powavg'][0] == pytest.approx(1.0, abs=1e-4)
     assert loudness['spec_loudness_powavg'][17, 0] == pytest.approx(0.3477, abs=1e-4)
