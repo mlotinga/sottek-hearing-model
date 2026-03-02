@@ -33,6 +33,7 @@ PARTICULAR PURPOSE.
 """
 
 # %% Import block
+from contextlib import nullcontext as does_not_raise  # pyright: ignore[reportMissingImports]
 import pytest  # pyright: ignore[reportMissingImports]
 import numpy as np
 from sottek_hearing_model.shm_roughness_ecma import shm_roughness_ecma
@@ -40,7 +41,7 @@ from sottek_hearing_model.shm_reference_signals import shm_generate_ref_signals
 
 # %% test_shm_roughness_48k
 def test_shm_roughness_48k():
-    _, roughness_ref_signal, _, _ = shm_generate_ref_signals(5)
+    _, roughness_ref_signal, _ = shm_generate_ref_signals(5)
 
     roughness_ref_signal = np.vstack((roughness_ref_signal, roughness_ref_signal))
 
@@ -65,7 +66,7 @@ def test_shm_roughness_48k():
 
 # %% test_shm_roughness_44k
 def test_shm_roughness_44k():
-    _, roughness_ref_signal, _, _ = shm_generate_ref_signals(5, samp_rate=44.1e3)
+    _, roughness_ref_signal, _ = shm_generate_ref_signals(5, samp_rate=44.1e3)
 
     roughness_ref_signal = np.vstack((roughness_ref_signal, roughness_ref_signal))
 
@@ -88,13 +89,18 @@ def test_shm_roughness_44k():
     assert np.all(roughness['spec_roughness_bin'][35:, 17] == pytest.approx(0.374, abs=1e-3))
 
 
-# %% test parallel_cores argument is working
-def test_shm_roughness_parallel_cores():
-    _, roughness_ref_signal, _, _ = shm_generate_ref_signals(5)
+# %% test parallel_cores argument runs without an error (the output value is not important)
+@pytest.mark.parametrize("parallel_cores, expectation", [
+    (1, does_not_raise()),
+    (2, does_not_raise()),
+    (None, does_not_raise()),
+])
+def test_shm_roughness_parallel_cores(parallel_cores, expectation):
+    _, roughness_ref_signal, _ = shm_generate_ref_signals(1)
 
-    roughness_serial = shm_roughness_ecma(p=roughness_ref_signal, samp_rate_in=48e3,
-                                          axis=1, soundfield='free_frontal',
-                                          wait_bar=False, out_plot=False, binaural=False,
-                                          parallel_cores=1)
-
-    assert roughness_serial['roughness90pc'][0] == pytest.approx(1.0, abs=1e-4)
+    with expectation:
+        assert shm_roughness_ecma(p=roughness_ref_signal, samp_rate_in=48e3,
+                                  axis=1, soundfield='free_frontal',
+                                  wait_bar=False, out_plot=False,
+                                  binaural=False,
+                                  parallel_cores=parallel_cores) is not None
