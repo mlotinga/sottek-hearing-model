@@ -17,7 +17,7 @@ Author: Mike JB Lotinga (m.j.lotinga@edu.salford.ac.uk)
 Institution: University of Salford
 
 Date created: 02/10/2025
-Date last modified: 23/10/2025
+Date last modified: 02/03/2026
 Python version: 3.11
 
 Copyright statement: This code has been developed during work undertaken within
@@ -33,6 +33,7 @@ PARTICULAR PURPOSE.
 """
 
 # %% Import block
+from contextlib import nullcontext as does_not_raise  # pyright: ignore[reportMissingImports]
 import pytest  # pyright: ignore[reportMissingImports]
 import numpy as np
 from sottek_hearing_model.shm_tonality_ecma import shm_tonality_ecma
@@ -45,7 +46,8 @@ def test_shm_tonality_48k():
 
     tonality = shm_tonality_ecma(p=tonality_ref_signal, samp_rate_in=48e3,
                                  axis=0, soundfield='free_frontal',
-                                 wait_bar=False, out_plot=False)
+                                 wait_bar=False, out_plot=False,
+                                 parallel_cores=None)
 
     assert tonality['tonality_avg'] == pytest.approx(1.0, abs=1e-4)
     assert tonality['spec_tonality_avg'][17] == pytest.approx(1.0, abs=1e-4)
@@ -64,7 +66,8 @@ def test_shm_tonality_44k():
 
     tonality = shm_tonality_ecma(p=tonality_ref_signal, samp_rate_in=44.1e3,
                                  axis=0, soundfield='free_frontal',
-                                 wait_bar=False, out_plot=False)
+                                 wait_bar=False, out_plot=False,
+                                 parallel_cores=None)
 
     assert tonality['tonality_avg'] == pytest.approx(1.0, abs=1e-3)
     assert tonality['spec_tonality_avg'][17] == pytest.approx(1.0, abs=1e-3)
@@ -75,3 +78,19 @@ def test_shm_tonality_44k():
     assert np.all(tonality['spec_tonality'][87:, 17] == pytest.approx(1.0, abs=1e-3))
     assert np.all(tonality['tonality_t_freqs'][57:] == pytest.approx(1000, abs=1))
     assert np.all(tonality['spec_tonality_freqs'][57:, 17] == pytest.approx(1000, abs=1))
+
+
+# %% test parallel_cores argument runs without an error (the output value is not important)
+@pytest.mark.parametrize("parallel_cores, expectation", [
+    (1, does_not_raise()),
+    (2, does_not_raise()),
+    (None, does_not_raise()),
+])
+def test_shm_tonality_parallel_cores(parallel_cores, expectation):
+    tonality_ref_signal, _, _ = shm_generate_ref_signals(1)
+
+    with expectation:
+        assert shm_tonality_ecma(p=tonality_ref_signal, samp_rate_in=48e3,
+                                 axis=0, soundfield='free_frontal',
+                                 wait_bar=False, out_plot=False,
+                                 parallel_cores=parallel_cores) is not None

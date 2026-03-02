@@ -17,7 +17,7 @@ Author: Mike JB Lotinga (m.j.lotinga@edu.salford.ac.uk)
 Institution: University of Salford
 
 Date created: 09/10/2025
-Date last modified: 23/10/2025
+Date last modified: 02/03/2026
 Python version: 3.11
 
 Copyright statement: This code has been developed during work undertaken within
@@ -33,6 +33,7 @@ PARTICULAR PURPOSE.
 """
 
 # %% Import block
+from contextlib import nullcontext as does_not_raise  # pyright: ignore[reportMissingImports]
 import pytest  # pyright: ignore[reportMissingImports]
 import numpy as np
 from sottek_hearing_model.shm_roughness_ecma import shm_roughness_ecma
@@ -46,7 +47,8 @@ def test_shm_roughness_48k():
 
     roughness = shm_roughness_ecma(p=roughness_ref_signal, samp_rate_in=48e3,
                                    axis=1, soundfield='free_frontal',
-                                   wait_bar=False, out_plot=False, binaural=True)
+                                   wait_bar=False, out_plot=False,
+                                   binaural=True, parallel_cores=None)
 
     assert roughness['roughness90pc'][0] == pytest.approx(1.0, abs=1e-4)
     assert roughness['spec_roughness_avg'][17, 0] == pytest.approx(0.374, abs=1e-3)
@@ -70,7 +72,8 @@ def test_shm_roughness_44k():
 
     roughness = shm_roughness_ecma(p=roughness_ref_signal, samp_rate_in=44.1e3,
                                    axis=1, soundfield='free_frontal',
-                                   wait_bar=False, out_plot=False, binaural=True)
+                                   wait_bar=False, out_plot=False,
+                                   binaural=True, parallel_cores=None)
 
     assert roughness['roughness90pc'][0] == pytest.approx(1.0, abs=1e-3)
     assert roughness['spec_roughness_avg'][17, 0] == pytest.approx(0.374, abs=1e-3)
@@ -84,3 +87,20 @@ def test_shm_roughness_44k():
     assert np.all(roughness['roughness_t_bin'][35:] == pytest.approx(1.0, abs=1e-2))
     assert np.all(roughness['spec_roughness_bin'][16:35, 17] == pytest.approx(0.374, abs=1e-1))
     assert np.all(roughness['spec_roughness_bin'][35:, 17] == pytest.approx(0.374, abs=1e-3))
+
+
+# %% test parallel_cores argument runs without an error (the output value is not important)
+@pytest.mark.parametrize("parallel_cores, expectation", [
+    (1, does_not_raise()),
+    (2, does_not_raise()),
+    (None, does_not_raise()),
+])
+def test_shm_roughness_parallel_cores(parallel_cores, expectation):
+    _, roughness_ref_signal, _ = shm_generate_ref_signals(1)
+
+    with expectation:
+        assert shm_roughness_ecma(p=roughness_ref_signal, samp_rate_in=48e3,
+                                  axis=1, soundfield='free_frontal',
+                                  wait_bar=False, out_plot=False,
+                                  binaural=False,
+                                  parallel_cores=parallel_cores) is not None
