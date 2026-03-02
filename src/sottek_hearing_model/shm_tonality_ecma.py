@@ -102,9 +102,11 @@ num_cores = max(1, multiprocessing.cpu_count() - 1)  # leave one free core
 
 # %% shm_tonality_ecma
 def shm_tonality_ecma(p, samp_rate_in, axis=0, soundfield='free_frontal',
-                      wait_bar=True, out_plot=False, parallel_cores=None):
+                      wait_bar=True, out_plot=False,
+                      parallel_cores=None, annoy_weight=False):
     """shm_tonality_ecma(p, samp_rate_in, axis=0, soundfield='free_frontal',
-                         wait_bar=True, out_plot=False, parallel_cores=None)
+                         wait_bar=True, out_plot=False,
+                         parallel_cores=None, annoy_weight=False)
 
     Returns tonality values and frequencies according to ECMA-418-2:2025
     for input audio signal.
@@ -144,6 +146,11 @@ def shm_tonality_ecma(p, samp_rate_in, axis=0, soundfield='free_frontal',
         on the number of available CPU cores; for multicore systems,
         1 core is always left free, to avoid system freeze.
         If 1, parallel processing is not applied).
+
+    annoy_weight : Boolean (default: false)
+        Flag indicating whether to include tonal annoyance-weighted results in
+        the output. This weighting is not currently included in the ECMA-418-2
+        standard, but was initially proposed by Sottek & Becker (2019).
 
     Returns
     -------
@@ -189,7 +196,7 @@ def shm_tonality_ecma(p, samp_rate_in, axis=0, soundfield='free_frontal',
         components corresponding with the time-dependent
         overall tonality values arranged as [time(, channels)].
 
-    tonality_avg : 1D or 2D array
+    tonality_avg : 1D array
         Time-averaged overall tonality
         arranged as [tonality(, channels)].
 
@@ -208,18 +215,41 @@ def shm_tonality_ecma(p, samp_rate_in, axis=0, soundfield='free_frontal',
     time-averaged A-weighted sound level, the time-dependent specific and
     overall tonality, with the latter also indicating the time-aggregated
     value. A set of plots is returned for each input channel.
+        
+    If annoy_weight=True, additional outputs are included in tonality:
+
+    spec_tonality_annoy : 2D or 3D array
+        Tonal annoyance-weighted, time-dependent specific tonality for each
+        critical band arranged as [time, bands(, channels)].
+
+    spec_tonality_avg_annoy : 1D or 2D array
+        Tonal annoyance-weighted, time-averaged specific tonality for each
+        critical band arranged as [bands(, channels)].
+
+    tonality_t_dep_annoy : 1D or 2D array
+        Tonal annoyance-weighted, time-dependent overall tonality
+        arranged as [time(, channels)].
+
+    tonality_avg_annoy : 1D array
+        Tonal annoyance-weighted, time-averaged overall tonality.
 
     Assumptions
     -----------
     The input signal is calibrated to units of acoustic pressure in Pascals
     (Pa).
 
+    References
+    ----------
+    Sottek, R & Becker, J (2019). Tonal annoyance vs. tonal loudness and
+    tonality. In: Proceedings of Inter-noise 2019, Madrid, Spain, 13-16 June
+    2019.
+
     """
     # %% Input checks
-    p, chans_in, chans = shm_in_check(p, samp_rate_in, axis,
-                                      soundfield, wait_bar, out_plot,
-                                      binaural=None,
-                                      parallel_cores=parallel_cores)
+    p, chans_in, chans = shm_in_check(p, samp_rate_in, axis, soundfield,
+                                      wait_bar, out_plot, binaural=None,
+                                      parallel_cores=parallel_cores,
+                                      annoy_weight=annoy_weight)
 
     # %% Define constants
 
@@ -355,6 +385,12 @@ def shm_tonality_ecma(p, samp_rate_in, axis=0, soundfield='free_frontal',
     tonality_t = np.zeros([end_block + 1, chans_in], order='F')
     tonality_t_freqs = np.zeros([end_block + 1, chans_in], order='F')
     tonality_avg = np.zeros([chans_in])
+
+    if annoy_weight:
+        spec_tonality_annoy = np.zeros([end_block + 1, n_bands, chans_in], order='F')
+        spec_tonality_avg_annoy = np.zeros([n_bands, chans_in], order='F')
+        tonality_t_dep_annoy = np.zeros([end_block + 1, chans_in], order='F')
+        tonality_avg_annoy = np.zeros([chans_in])
 
     for chan in chan_iter:
         # Apply auditory filter bank
@@ -516,6 +552,39 @@ def shm_tonality_ecma(p, samp_rate_in, axis=0, soundfield='free_frontal',
         # Time-averaged total tonality [T]
         tonality_avg[chan] = np.sum(tonality_t[mask, chan],
                                     axis=0)/(np.count_nonzero(mask) + epsilon)
+    
+        # Calculation of annoyance-weighted tonality (not currently in ECMA-418-2:2025)
+        # The implementation follows the method as it has been implemented in ArtemiS, but
+        # this may change in the future: the masking is currently applied to the
+        # annoyance-weighted values, but it is arguably more appropriate to mask
+        # based on the unweighted values, and then apply the annoyance weighting to the
+        # masked values.
+        if annoy_weight:
+            annoy_weight_x = np.ones(band_centre_freqs.size)
+            annoy_weight_x[band_centre_freqs
+                           >= 1e3] = 2.3*(np.log10(band_centre_freqs[band_centre_freqs
+                                                                     >= 1e3])
+                                                                     - 3) + 1
+        
+            spec_tonality_annoy[:, :, chan] = spec_tonality[:, :, chan]*annoy_weight_x
+
+            for z_band in range(n_bands):
+                mask = spec_tonality_annoy[:, z_band, chan] > 0.02
+                mask[0:57] = False
+
+                spec_tonality_avg_annoy[z_band,
+                                        chan] = np.sum(spec_tonality_annoy[mask,
+                                                                           z_band,
+                                                                           chan],
+                                                       0)/(np.count_nonzero(mask)
+                                                           + epsilon)
+
+            tonality_t_dep_annoy[:, chan] = np.max(spec_tonality_annoy[:, :, chan], axis=1)
+            mask = tonality_t_dep_annoy[:, chan] > 0.02
+            mask[0:57] = False
+            tonality_avg_annoy[chan] = np.sum(tonality_t_dep_annoy[mask, chan],
+                                              axis=0)/(np.count_nonzero(mask) + epsilon)
+
 
         # %% Output plotting
 
@@ -572,8 +641,59 @@ def shm_tonality_ecma(p, samp_rate_in, axis=0, soundfield='free_frontal',
             fig.suptitle(t=(chan_lab + " signal sound pressure level = " +
                             str(shm_round(level_Aeq, 1)) +
                             r" dB $\mathregular{\mathit{L}_{Aeq}}$"))
-            
             show_plot(fig)
+
+            if annoy_weight:
+                fig, axs = create_figure(nrows=2, ncols=1, figsize=[10.5, 7.5],
+                                         layout='constrained')
+
+                ax1 = axs[0]
+                pmesh = ax1.pcolormesh(time_out, band_centre_freqs,
+                                       np.swapaxes(spec_tonality_annoy[:, :, chan], 0, 1),
+                                       cmap=cmap_plasma,
+                                       vmin=0,
+                                       vmax=np.ceil(np.max(tonality_t_dep_annoy[:, chan])*10)/10,
+                                       shading='gouraud')
+                ax1.set(xlim=[time_out[1],
+                              time_out[-1] + (time_out[1] - time_out[0])],
+                        xlabel="Time, s",
+                        ylim=[band_centre_freqs[0], band_centre_freqs[-1]],
+                        yscale='log',
+                        yticks=[63, 125, 250, 500, 1e3, 2e3, 4e3, 8e3, 16e3],
+                        yticklabels=["63", "125", "250", "500", "1k", "2k", "4k",
+                                     "8k", "16k"],
+                        ylabel="Frequency, Hz")
+                ax1.minorticks_off()
+                cbax = ax1.inset_axes([1.05, 0, 0.05, 1])
+                fig.colorbar(pmesh, ax=ax1,
+                             label=(r"Specific tonality,"
+                                    "\n"
+                                    r"(tonal annoyance-weighted)"
+                                    "\n"
+                                    r"$\mathregular{tu_{SHMa}}/\mathregular{Bark_{SHM}}$"),
+                             aspect=10, cax=cbax)
+
+                ax2 = axs[1]
+                ax2.plot(time_out, tonality_avg_annoy[chan]*np.ones(time_out.size),
+                         color=cmap_plasma(33/255), linewidth=1, linestyle='dotted',
+                         label=("Time-" + "\n" + "average"))
+                ax2.plot(time_out, tonality_t_dep_annoy[:, chan],
+                         color=cmap_plasma(165/255),
+                         linewidth=0.75, label=("Time-" + "\n" + "dependent"))
+                ax2.set(xlim=[time_out[0], time_out[-1] + time_out[1] - time_out[0]],
+                        xlabel="Time, s",
+                        ylim=[0, 1.1*np.ceil(np.max(tonality_t_dep_annoy[:, chan])*10)/10],
+                        ylabel=(r"Tonality (tonal "
+                                "\n"
+                                r"annoyance-weighted),"
+                                "\n"
+                                r"$\mathregular{tu_{SHMa}}$"))
+                ax2.grid(alpha=0.075, linestyle='--')
+                ax2.legend(bbox_to_anchor=(1.025, 0.8), loc='upper left', title="Overall")
+                fig.suptitle(t=(chan_lab + " signal sound pressure level = " +
+                                str(shm_round(level_Aeq, 1)) +
+                                r" dB $\mathregular{\mathit{L}_{Aeq}}$"))
+                show_plot(fig)
 
         # end of if branch for plotting
     # end of for loop over channels
@@ -588,6 +708,12 @@ def shm_tonality_ecma(p, samp_rate_in, axis=0, soundfield='free_frontal',
         spec_tonality_avg_freqs = np.squeeze(spec_tonality_avg_freqs)
         tonality_t = np.squeeze(tonality_t)
         tonality_t_freqs = np.squeeze(tonality_t_freqs)
+
+        if annoy_weight:
+            spec_tonality_annoy = np.squeeze(spec_tonality_annoy)
+            spec_tonality_avg_annoy = np.squeeze(spec_tonality_avg_annoy)
+            tonality_t_dep_annoy = np.squeeze(tonality_t_dep_annoy)
+            tonality_avg_annoy = np.squeeze(tonality_avg_annoy)
     # end of if branch for singleton dimensions
 
     # Assign outputs to structure
@@ -604,6 +730,12 @@ def shm_tonality_ecma(p, samp_rate_in, axis=0, soundfield='free_frontal',
     tonality.update({'band_centre_freqs': band_centre_freqs})
     tonality.update({'time_out': time_out})
     tonality.update({'soundfield': soundfield})
+
+    if annoy_weight:
+        tonality.update({'spec_tonality_annoy': spec_tonality_annoy})
+        tonality.update({'spec_tonality_avg_annoy': spec_tonality_avg_annoy})
+        tonality.update({'tonality_t_dep_annoy': tonality_t_dep_annoy})
+        tonality.update({'tonality_avg_annoy': tonality_avg_annoy})
 
     return tonality
 # end of shm_tonality_ecma function

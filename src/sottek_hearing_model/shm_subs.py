@@ -1137,9 +1137,11 @@ def shm_rms(vals, axis=0, keepdims=False):
 
 # %% shm_in_check
 def shm_in_check(signal, samp_rate_in, axis, soundfield,
-                 wait_bar, out_plot, binaural=None, parallel_cores=None):
+                 wait_bar, out_plot, binaural=None,
+                 parallel_cores=None, annoy_weight=None):
     """shm_in_check(signal, samp_rate_in, axis, soundfield,
-                    wait_bar, out_plot, binaural=None, parallel_cores=None)
+                    wait_bar, out_plot, binaural=None,
+                    parallel_cores=None, annoy_weight=None)
 
     Input checking and error handling function.
 
@@ -1184,6 +1186,11 @@ def shm_in_check(signal, samp_rate_in, axis, soundfield,
         on the number of available CPU cores; for multicore systems,
         1 core is always left free, to avoid system freeze.
         If 1, parallel processing is not applied).
+
+    annoy_weight : Boolean (default: False)
+        Flag indicating whether to include tonal annoyance-weighted results in
+        the output. If None, this variable will
+        not be checked.
 
     Returns
     -------
@@ -1259,7 +1266,7 @@ def shm_in_check(signal, samp_rate_in, axis, soundfield,
     if binaural is not None:
         if not isinstance(binaural, bool):
             raise ValueError("\nInput argument 'binaural' must be logical True/False")
-        
+
     # Check if parallel_cores has a valid value
     if parallel_cores is not None:
         try:
@@ -1272,6 +1279,11 @@ def shm_in_check(signal, samp_rate_in, axis, soundfield,
 
         except TypeError:
             raise TypeError("\nInput argument 'parallel_cores' must be a positive integer or None.")
+
+    # Check if annoy_weight has a valid value
+    if annoy_weight is not None:
+        if not isinstance(annoy_weight, bool):
+            raise ValueError("\nInput argument 'annoy_weight' must be logical True/False")
 
     return signal, chans_in, chans
 # end of shm_in_check function
