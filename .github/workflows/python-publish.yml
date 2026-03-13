@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - "v*"  # runs on any tag starting with "v"
+  workflow_dispatch:    # allows test runs of workflow job
 
 jobs:
 
@@ -56,10 +57,11 @@ jobs:
   # Publish job — only runs if tests pass
   # -------------------------------------
           
-  build-and-publish:
-    name: Build and Publish
+  publish:
+    name: Publish
     runs-on: ubuntu-latest
     needs: test-and-build
+    if: startsWith(github.ref, 'refs/tags/v')  # only runs if tagged for release
     permissions:
       contents: write
 
