@@ -73,7 +73,13 @@ roughness = shm_roughness_ecma(p=sine_1kHz_70Hz_60dB,
 
 The third reference signal generated above (`sine_1kHz_4Hz_60dB`) corresponds with the fluctuation strength metric. This metric will be added to the package in a future release.
 
-By default, the functions make use of available parallel processing resources for efficient calculations. For user control of this feature, or if memory overflow issues are encountered (see issue [#2](https://github.com/mlotinga/sottek-hearing-model/issues/2)), parallel processing can be disabled or controlled using the input argument `parallel_cores`. Setting `parallel_cores=1` will disable parallel processing, while setting `parallel_cores` to another positive integer value will set the processing to use the specified number of parallel workers (to avoid system freeze, in a multicore system, the number actually used is always capped by the number of available cores minus 1).
+By default, the functions make use of available parallel processing resources for efficient calculations. For user control of this feature, or if memory overflow issues are encountered (see issue [#2](https://github.com/mlotinga/sottek-hearing-model/issues/2)), parallel processing can be disabled or controlled using the input argument `parallel_cores`. Setting `parallel_cores=1` will disable parallel processing, while setting `parallel_cores` to another positive integer value will set the processing to use the specified number of parallel workers (to avoid system freeze, in a multicore system, the number actually used is always capped by the number of available cores minus 1). The default behaviour calculates the number of parallel workers to use from the available CPU cores.
+
+The `shm_tonality_ecma` function also features a 'tonal annoyance weighting' option via the argument `annoy_weight=True`, which implements the weighting proposed in:
+
+> Sottek, R & Becker, J (2019). Tonal annoyance vs. tonal loudness and tonality. In: Proceedings of Inter-noise 2019, Madrid, Spain, 13-16 June 2019.
+
+(This feature is considered experimental at present.)
 
 ## Known issues
 
