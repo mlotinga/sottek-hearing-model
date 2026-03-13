@@ -39,8 +39,8 @@ import numpy as np
 from sottek_hearing_model.shm_roughness_ecma import shm_roughness_ecma
 from sottek_hearing_model.shm_reference_signals import shm_generate_ref_signals
 
-# %% test_shm_roughness_48k
-def test_shm_roughness_48k():
+# %% test_shm_roughness_ref_48k
+def test_shm_roughness_ref_48k():
     _, roughness_ref_signal, _ = shm_generate_ref_signals(5)
 
     roughness_ref_signal = np.vstack((roughness_ref_signal, roughness_ref_signal))
@@ -64,7 +64,7 @@ def test_shm_roughness_48k():
     assert np.all(roughness['spec_roughness_bin'][35:, 17] == pytest.approx(0.374, abs=1e-3))
 
 
-# %% test_shm_roughness_44k
+# %% test_shm_roughness_ref_44k
 def test_shm_roughness_ref_44k():
     _, roughness_ref_signal, _ = shm_generate_ref_signals(5, samp_rate=44.1e3)
 

@@ -62,7 +62,7 @@ def test_shm_tonality_ref_48k():
     assert np.all(tonality['spec_tonality_freqs'][57:, 17] == pytest.approx(1000, abs=1))
 
 
-# %% test_shm_tonality_44k
+# %% test_shm_tonality_ref_44k
 def test_shm_tonality_ref_44k():
     tonality_ref_signal, _, _ = shm_generate_ref_signals(5, samp_rate=44.1e3)
 
