@@ -37,7 +37,7 @@ jobs:
         run: uv sync --dev
 
       - name: Run tests
-        run: uv run pytest
+        run: uv run pytest -vv  # verbose mode
 
       - name: Build package
         run: uv build
