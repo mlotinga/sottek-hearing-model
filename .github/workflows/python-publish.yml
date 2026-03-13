@@ -46,6 +46,12 @@ jobs:
           echo "Running import test..."
           uv run python -c "import sottek_hearing_model; print('✅ Import succeeded!')"
 
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
   # -------------------------------------
   # Publish job — only runs if tests pass
   # -------------------------------------
@@ -74,11 +80,11 @@ jobs:
           uv python install 3.11
           uv python pin 3.11
 
-      - name: Sync dependencies
-        run: uv sync
-
-      - name: Build package
-        run: uv build
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
 
       # TestPyPI publishing for pre-release versions (rc, alpha, beta)
       - name: Publish to TestPyPI
