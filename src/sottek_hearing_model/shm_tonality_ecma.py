@@ -83,6 +83,7 @@ from sottek_hearing_model.plotting_tools import create_figure, show_plot
 import bottleneck as bn
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import multiprocessing
+import itertools
 
 # %% Module settings
 mpl.rcParams['font.family'] = 'sans-serif'
@@ -420,14 +421,15 @@ def shm_tonality_ecma(p, samp_rate_in, axis=0, soundfield='free_frontal',
 
         if n_cores > 1:
             with ThreadPoolExecutor(max_workers=n_cores) as executor:
-                futures = [executor.submit(shm_band_auto_correlation, z_band,
-                                           band_centre_freqs_dupe,
-                                           block_size_dupe, overlap, pn_omz_dupe)
-                           for z_band in band_acf_iter]
+                results = executor.map(shm_band_auto_correlation,
+                                       band_acf_iter,
+                                       itertools.repeat(band_centre_freqs_dupe),
+                                       itertools.repeat(block_size_dupe),
+                                       itertools.repeat(overlap),
+                                       itertools.repeat(pn_omz_dupe))
 
-            for future in as_completed(futures):
-                z_band, unbiased_norm_acf_dupe_band = future.result()
-                unbiased_norm_acf_dupe[z_band] = unbiased_norm_acf_dupe_band
+            for z_band, result in results:
+                unbiased_norm_acf_dupe[z_band] = result
 
         else:  # no parallel processing: run in loop to save memory
             for z_band in band_acf_iter:
@@ -449,20 +451,22 @@ def shm_tonality_ecma(p, samp_rate_in, axis=0, soundfield='free_frontal',
 
         if n_cores > 1:
             with ThreadPoolExecutor(max_workers=n_cores) as executor:
-                futures = [executor.submit(shm_band_loud_components, z_band,
-                                           band_centre_freqs,
-                                           block_size, end_block, dfz,
-                                           unbiased_norm_acf_dupe,
-                                           i_num_bands_avg_dupe)
-                           for z_band in band_acf_avg_iter]
+                results = executor.map(shm_band_loud_components,
+                                       band_acf_avg_iter,
+                                       itertools.repeat(band_centre_freqs),
+                                       itertools.repeat(block_size),
+                                       itertools.repeat(end_block),
+                                       itertools.repeat(dfz),
+                                       itertools.repeat(unbiased_norm_acf_dupe),
+                                       itertools.repeat(i_num_bands_avg_dupe))
 
-            for future in as_completed(futures):
-                (z_band, band_tonal_loudness,
-                 band_noise_loudness, band_tonal_freqs) = future.result()
+            for (z_band, band_tonal_loudness,
+                band_noise_loudness, band_tonal_freqs) in results:
 
                 spec_tonal_loudness[:, z_band, chan] = band_tonal_loudness
                 spec_noise_loudness[:, z_band, chan] = band_noise_loudness
                 spec_tonality_freqs[:, z_band, chan] = band_tonal_freqs
+
         
         else:  # no parallel processing: run in loop to save memory
             for z_band in band_acf_avg_iter:
@@ -802,17 +806,15 @@ def shm_band_auto_correlation(z_band, band_centre_freqs, block_size_bands,
     # ACF implementation using DFT
     # Section 6.2.2 Equations 27 & 28 ECMA-418-2:2025
     # [phi_unscaled,l,z(m)]
-    unscaled_acf = np.asfortranarray(np.fft.irfft(np.abs(np.fft.rfft(signal_rect_seg,
-                                                                     n=2*block_size,
-                                                                     axis=0))**2,
-                                                  n=2*block_size,
-                                                  axis=0))
+    fft_vals = np.fft.rfft(signal_rect_seg, n=2*block_size, axis=0)
+    power = fft_vals*np.conj(fft_vals)
+    unscaled_acf = np.asfortranarray(np.fft.irfft(power, n=2*block_size, axis=0))
 
     # Section 6.2.2 Equation 29 ECMA-418-2:2025 [phi_l,z(m)]
-    denom = (np.sqrt(np.flip(np.cumsum(np.flip(signal_rect_seg, axis=0)**2,
-                                       axis=0), axis=0)
-                     * np.flip(np.cumsum(signal_rect_seg**2, axis=0),
-                               axis=0)) + epsilon)
+    signal_rect_seg_sq = signal_rect_seg**2
+    flip_forward_cumsum = np.cumsum(signal_rect_seg_sq, axis=0)[::-1]
+    flip_reverse_cumsum = np.cumsum(signal_rect_seg_sq[::-1], axis=0)[::-1]
+    denom = np.sqrt(flip_reverse_cumsum*flip_forward_cumsum) + epsilon
 
     # note that the block length is used here, rather than the 2*s_b,
     # for compatability with the remaining code - beyond 0.75*s_b is

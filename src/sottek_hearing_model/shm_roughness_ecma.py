@@ -83,6 +83,7 @@ from sottek_hearing_model.filters import weight_A_t
 from sottek_hearing_model.plotting_tools import create_figure, show_plot
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import multiprocessing
+import itertools
 
 # %% Module settings
 mpl.rcParams['font.family'] = 'sans-serif'
@@ -384,17 +385,18 @@ def shm_roughness_ecma(p, samp_rate_in, axis=0, soundfield='free_frontal',
             band_iter = range(n_bands)
 
         if n_cores > 1:
-            with ThreadPoolExecutor(max_workers=n_cores) as executor:
-                futures = [executor.submit(shm_envelopes, z_band, block_size,
-                                           overlap, i_start,
-                                           band_centre_freqs[z_band],
-                                           pn_omz[:, z_band])
-                           for z_band in band_iter]
+            with ThreadPoolExecutor(max_workers=n_cores) as executor:            
+                results = executor.map(shm_envelopes,
+                                       band_iter,
+                                       itertools.repeat(block_size),
+                                       itertools.repeat(overlap),
+                                       itertools.repeat(i_start),
+                                       (band_centre_freqs[z] for z in band_iter),
+                                       (pn_omz[:, z] for z in band_iter))
 
-            for future in as_completed(futures):
-                (z_band, l_blocks_out,
-                 band_basis_loudness,
-                 band_envelopes) = future.result()
+            for (z_band, l_blocks_out,
+                band_basis_loudness,
+                band_envelopes) in results:
 
                 basis_loudness[:, z_band] = band_basis_loudness
                 envelopes[:, :, z_band] = band_envelopes
@@ -501,16 +503,19 @@ def shm_roughness_ecma(p, samp_rate_in, axis=0, soundfield='free_frontal',
         block_iter = range(n_blocks)
 
         if n_cores > 1:
+            par_tasks = list(itertools.product(band_iter, block_iter))
             with ThreadPoolExecutor(max_workers=n_cores) as executor:
-                futures = [executor.submit(shm_spectral_weight, z_band, l_block,
-                                           error_correction, res_dft1500, theta,
-                                           mod_weight_spectra_avg[:, l_block, z_band])
-                           for z_band in band_iter for l_block in block_iter]
+                results = executor.map(lambda p:
+                                       shm_spectral_weight(p[0], p[1],
+                                                           error_correction,
+                                                           res_dft1500,
+                                                           theta,
+                                                           mod_weight_spectra_avg[:, p[1], p[0]]),
+                                       par_tasks)
 
-            for future in as_completed(futures):
-                (z_band, l_block,
+            for (z_band, l_block,
                  mod_amp_band_block,
-                 mod_rate_band_block) = future.result()
+                 mod_rate_band_block) in results:
 
                 mod_amp[:, l_block, z_band] = mod_amp_band_block
                 mod_rate[:, l_block, z_band] = mod_rate_band_block
@@ -559,16 +564,17 @@ def shm_roughness_ecma(p, samp_rate_in, axis=0, soundfield='free_frontal',
         block_iter = range(n_blocks)
 
         if n_cores > 1:
+            par_tasks = list(itertools.product(band_iter, block_iter))
             with ThreadPoolExecutor(max_workers=n_cores) as executor:
-                futures = [executor.submit(shm_fundamental_mod_rate, z_band, l_block,
-                                           mod_rate[:, l_block, z_band],
-                                           mod_amp_hi_weight[:, l_block, z_band])
-                           for z_band in band_iter for l_block in block_iter]
+                results = executor.map(lambda p:
+                                       shm_fundamental_mod_rate(p[0], p[1],
+                                                                mod_rate[:, p[1], p[0]],
+                                                                mod_amp_hi_weight[:, p[1], p[0]]),
+                                       par_tasks)
 
-            for future in as_completed(futures):
-                (z_band, l_block,
+            for (z_band, l_block,
                  mod_fund_rate_band_block,
-                 mod_max_weight_band_block) = future.result()
+                 mod_max_weight_band_block) in results:
 
                 mod_fund_rate[l_block, z_band] = mod_fund_rate_band_block
                 mod_max_weight[:, l_block, z_band] = mod_max_weight_band_block
@@ -1118,7 +1124,7 @@ def shm_fundamental_mod_rate(z_band, l_block, mod_rate_band_block, mod_amp_hi_we
 
         # end of loop over peaks
 
-        harm_comp_energy = harm_comp_energy.astype(float)
+        harm_comp_energy = np.array(harm_comp_energy).astype(float)
         i_max_energy = np.argmax(harm_comp_energy)
         ind_set_max = ind_set_i_peak[i_max_energy]
         mod_fund_rate_band_block = mod_rate_for_loop[i_max_energy]
