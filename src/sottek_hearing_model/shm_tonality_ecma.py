@@ -44,7 +44,7 @@ Author: Mike JB Lotinga (m.j.lotinga@edu.salford.ac.uk)
 Institution: University of Salford
 
 Date created: 25/05/2023
-Date last modified: 02/03/2026
+Date last modified: 13/03/2026
 Python version: 3.11
 
 Copyright statement: This code has been developed during work undertaken within
@@ -415,9 +415,8 @@ def shm_tonality_ecma(p, samp_rate_in, axis=0, soundfield='free_frontal',
         else:
             band_acf_iter = range(61)
 
-        # pre-allocate array
-        # unbiased_norm_acf_dupe = np.empty(61, dtype=object)
-        unbiased_norm_acf_dupe = [None] * 61
+        # pre-allocate list
+        unbiased_norm_acf_dupe = [None]*61
 
         if n_cores > 1:
             with ThreadPoolExecutor(max_workers=n_cores) as executor:

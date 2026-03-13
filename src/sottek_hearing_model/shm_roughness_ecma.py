@@ -37,7 +37,7 @@ Author: Mike JB Lotinga (m.j.lotinga@edu.salford.ac.uk)
 Institution: University of Salford
 
 Date created: 29/05/2023
-Date last modified: 02/03/2026
+Date last modified: 13/03/2026
 Python version: 3.11
 
 Copyright statement: This code has been developed during work undertaken within
@@ -1060,9 +1060,9 @@ def shm_fundamental_mod_rate(z_band, l_block, mod_rate_band_block, mod_amp_hi_we
         n_peaks = len(mod_rate_for_loop)
 
         # initialise empty list for equation 90
-        ind_set_i_peak = np.empty([n_peaks,], dtype=object)
-        # initialise empty matrix for equation 91
-        harm_comp_energy = np.empty([n_peaks,], dtype=object)
+        ind_set_i_peak = [None]*n_peaks
+        # initialise empty list for equation 91
+        harm_comp_energy = [None]*n_peaks
 
         for i_peak in range(n_peaks):
             # Equation 88 [R_i_0(i)]
