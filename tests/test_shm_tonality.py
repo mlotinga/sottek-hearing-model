@@ -17,7 +17,7 @@ Author: Mike JB Lotinga (m.j.lotinga@edu.salford.ac.uk)
 Institution: University of Salford
 
 Date created: 02/10/2025
-Date last modified: 02/03/2026
+Date last modified: 13/03/2026
 Python version: 3.11
 
 Copyright statement: This code has been developed during work undertaken within
@@ -47,7 +47,7 @@ def test_shm_tonality_48k():
     tonality = shm_tonality_ecma(p=tonality_ref_signal, samp_rate_in=48e3,
                                  axis=0, soundfield='free_frontal',
                                  wait_bar=False, out_plot=False,
-                                 parallel_cores=None)
+                                 parallel_cores=None, annoy_weight=False)
 
     assert tonality['tonality_avg'] == pytest.approx(1.0, abs=1e-4)
     assert tonality['spec_tonality_avg'][17] == pytest.approx(1.0, abs=1e-4)
@@ -67,7 +67,7 @@ def test_shm_tonality_44k():
     tonality = shm_tonality_ecma(p=tonality_ref_signal, samp_rate_in=44.1e3,
                                  axis=0, soundfield='free_frontal',
                                  wait_bar=False, out_plot=False,
-                                 parallel_cores=None)
+                                 parallel_cores=None, annoy_weight=False)
 
     assert tonality['tonality_avg'] == pytest.approx(1.0, abs=1e-3)
     assert tonality['spec_tonality_avg'][17] == pytest.approx(1.0, abs=1e-3)
