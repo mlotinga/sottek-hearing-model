@@ -416,7 +416,8 @@ def shm_tonality_ecma(p, samp_rate_in, axis=0, soundfield='free_frontal',
             band_acf_iter = range(61)
 
         # pre-allocate array
-        unbiased_norm_acf_dupe = np.empty(61, dtype=object)
+        # unbiased_norm_acf_dupe = np.empty(61, dtype=object)
+        unbiased_norm_acf_dupe = [None] * 61
 
         if n_cores > 1:
             with ThreadPoolExecutor(max_workers=n_cores) as executor:
