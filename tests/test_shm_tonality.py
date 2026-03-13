@@ -42,8 +42,8 @@ from sottek_hearing_model.shm_tonality_ecma import shm_tonality_ecma
 from sottek_hearing_model.shm_reference_signals import shm_generate_ref_signals
 
 
-# %% test_shm_tonality_48k
-def test_shm_tonality_48k():
+# %% test_shm_tonality_ref_48k
+def test_shm_tonality_ref_48k():
     tonality_ref_signal, _, _ = shm_generate_ref_signals(5)
 
     tonality = shm_tonality_ecma(p=tonality_ref_signal, samp_rate_in=48e3,
@@ -63,7 +63,7 @@ def test_shm_tonality_48k():
 
 
 # %% test_shm_tonality_44k
-def test_shm_tonality_44k():
+def test_shm_tonality_ref_44k():
     tonality_ref_signal, _, _ = shm_generate_ref_signals(5, samp_rate=44.1e3)
 
     tonality = shm_tonality_ecma(p=tonality_ref_signal, samp_rate_in=44.1e3,
@@ -88,7 +88,7 @@ def test_shm_tonality_44k():
     (2, does_not_raise()),
     (None, does_not_raise()),
 ])
-def test_shm_tonality_parallel_cores(parallel_cores, expectation):
+def test_shm_tonality_ref_parallel_cores(parallel_cores, expectation):
     tonality_ref_signal, _, _ = shm_generate_ref_signals(1)
 
     with expectation:

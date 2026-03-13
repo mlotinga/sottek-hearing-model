@@ -65,7 +65,7 @@ def test_shm_roughness_48k():
 
 
 # %% test_shm_roughness_44k
-def test_shm_roughness_44k():
+def test_shm_roughness_ref_44k():
     _, roughness_ref_signal, _ = shm_generate_ref_signals(5, samp_rate=44.1e3)
 
     roughness_ref_signal = np.vstack((roughness_ref_signal, roughness_ref_signal))
@@ -95,7 +95,7 @@ def test_shm_roughness_44k():
     (2, does_not_raise()),
     (None, does_not_raise()),
 ])
-def test_shm_roughness_parallel_cores(parallel_cores, expectation):
+def test_shm_roughness_ref_parallel_cores(parallel_cores, expectation):
     _, roughness_ref_signal, _ = shm_generate_ref_signals(1)
 
     with expectation:
