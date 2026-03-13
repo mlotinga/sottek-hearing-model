@@ -17,7 +17,7 @@ Author: Mike JB Lotinga (m.j.lotinga@edu.salford.ac.uk)
 Institution: University of Salford
 
 Date created: 02/10/2025
-Date last modified: 02/03/2026
+Date last modified: 13/03/2026
 Python version: 3.11
 
 Copyright statement: This code has been developed during work undertaken within
@@ -39,8 +39,8 @@ from sottek_hearing_model.shm_loudness_ecma import (shm_loudness_ecma, shm_loudn
 from sottek_hearing_model.shm_reference_signals import shm_generate_ref_signals
 
 
-# %% test_shm_loudness
-def test_shm_loudness():
+# %% test_shm_loudness_ref
+def test_shm_loudness_ref():
     loudness_ref_signal, _, _ = shm_generate_ref_signals(5)
 
     loudness_ref_signal = np.vstack((loudness_ref_signal, loudness_ref_signal))
@@ -79,3 +79,11 @@ def test_shm_loudness():
     assert np.all(loudness_from_comp['loudness_t_bin'][87:] == pytest.approx(1.0, abs=1e-3))
     assert np.all(loudness_from_comp['spec_loudness_bin'][57:87, 17] == pytest.approx(0.3477, abs=1e-2))
     assert np.all(loudness_from_comp['spec_loudness_bin'][87:, 17] == pytest.approx(0.3477, abs=1e-4))
+
+
+# # %% test_shm_loudness_data
+# def test_shm_loudness_data():
+#     BusyStreet1_0530_0600_Loudness_Bin = np.loadtxt(r"data/BusyStreet1_0530-0600.Loudness (Hearing Model) vs. Time Bin.asc", usecols=1)
+#     BusyStreet1_0530_0600_Loudness_LR = np.loadtxt(r"data/BusyStreet1_0530-0600.Loudness (Hearing Model) vs. Time LR.asc", usecols=[1, 2])
+    
+
