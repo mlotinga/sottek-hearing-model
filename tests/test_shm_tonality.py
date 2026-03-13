@@ -36,6 +36,8 @@ PARTICULAR PURPOSE.
 from contextlib import nullcontext as does_not_raise  # pyright: ignore[reportMissingImports]
 import pytest  # pyright: ignore[reportMissingImports]
 import numpy as np
+import sottek_hearing_model
+print("MODULE PATH:", sottek_hearing_model.__file__)
 from sottek_hearing_model.shm_tonality_ecma import shm_tonality_ecma
 from sottek_hearing_model.shm_reference_signals import shm_generate_ref_signals
 
