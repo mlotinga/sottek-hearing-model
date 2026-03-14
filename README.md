@@ -1,4 +1,4 @@
-![sottek-hearing-model](https://raw.githubusercontent.com/mlotinga/sottek-hearing-model/docs/media/sottek-hearing-model.png') <!-- markdownlint-disable-line MD041 -->
+![sottek-hearing-model](https://github.com/mlotinga/sottek-hearing-model/blob/3f5d59bec97997ab96fc9dd4c403b0de88797f8f/docs/media/sottek-hearing-model.png) <!-- markdownlint-disable-line MD041 -->
 
 # sottek-hearing-model
 [![PyPI version](https://img.shields.io/pypi/v/sottek-hearing-model.svg)](https://pypi.org/project/sottek-hearing-model)
