@@ -3,7 +3,7 @@ name = "sottek-hearing-model"
 version = "0.1.14"
 description = "Implements algorithms from the Sottek Hearing Model"
 readme = "README.md"
-license = "AGPL-3.0-only"
+license = "GPL-3.0-only"
 authors = [
     { name = "Mike Lotinga", email = "m.j.lotinga@edu.salford.ac.uk" }
 ]
