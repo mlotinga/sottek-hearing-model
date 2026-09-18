@@ -1,6 +1,6 @@
 # ECMA-418-2:2025 fluctuation strength (Sottek Hearing Model): validation of the Python implementation
 
-**Status: draft** (18 September 2026; updated same day following the quieter-period end-index bugfix)
+**Status: draft** (18 September 2026)
 
 This report summarises the performance of `shm_fluctuation_ecma()` (file `src/sottek_hearing_model/shm_fluctuation_ecma.py`, with the HSA subfunctions in `shm_subs.py`), a Python translation of the MATLAB implementation `acousticSHMFluctuation.m` in the [refmap-psychoacoustics](https://github.com/acoustics-code-salford/refmap-psychoacoustics) repository. Two questions are addressed:
 
