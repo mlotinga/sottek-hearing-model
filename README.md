@@ -19,7 +19,8 @@ After installing, the package functions can be imported as follows:
 ```python
 from sottek_hearing_model import (shm_tonality_ecma,
                                   shm_loudness_ecma,
-                                  shm_roughness_ecma)
+                                  shm_roughness_ecma,
+                                  shm_fluctuation_ecma)
 ```
 
 or (since the package currently comprises a small number of functions):
@@ -71,9 +72,14 @@ roughness = shm_roughness_ecma(p=sine_1kHz_70Hz_60dB,
                                samp_rate_in=48e3,
                                soundfield='free_frontal',
                                out_plot=True)
+
+fluctuation = shm_fluctuation_ecma(p=sine_1kHz_4Hz_60dB,
+                                   samp_rate_in=48e3,
+                                   soundfield='free_frontal',
+                                   out_plot=True)
 ```
 
-The third reference signal generated above (`sine_1kHz_4Hz_60dB`) corresponds with the fluctuation strength metric. This metric will be added to the package in a future release.
+The fluctuation strength metric (`shm_fluctuation_ecma`, implementing section 9 of ECMA-418-2:2025) requires input signals longer than 1.3653 s (its processing block length). The fluctuation strength implementation currently makes a small number of documented departures from the printed text of the 2025 standard (4th edition), where the printed equations were found to be internally inconsistent; see the function docstrings and the [validation report](docs/validation/fluctuation_strength_validation.md).
 
 By default, the functions make use of available parallel processing resources for efficient calculations. For user control of this feature, or if memory overflow issues are encountered (see issue [#2](https://github.com/mlotinga/sottek-hearing-model/issues/2)), parallel processing can be disabled or controlled using the input argument `parallel_cores`. Setting `parallel_cores=1` will disable parallel processing, while setting `parallel_cores` to another positive integer value will set the processing to use the specified number of parallel workers (to avoid system freeze, in a multicore system, the number actually used is always capped by the number of available cores minus 1). The default behaviour calculates the number of parallel workers to use from the available CPU cores.
 
