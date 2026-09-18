@@ -12,6 +12,7 @@ Requirements
 numpy
 scipy
 matplotlib
+bottleneck
 
 Functions
 ---------
@@ -34,6 +35,16 @@ shm_round : Rounds the input signal to the nearest integer using a 'traditional'
             rounding method.
 shm_rms : Computes the root mean square of the input array.
 shm_in_check : Checks the input arguments for validity.
+shm_mov_median : Computes a centred moving median with shrinking endpoint
+                 windows (equivalent to MATLAB movmedian).
+shm_loud_nonlin : Applies the loudness nonlinearity to a root-mean-square
+                  sound pressure.
+shm_fluct_weight : Computes the fluctuation strength band-pass modulation-rate
+                   weighting.
+shm_hsa_window_response : Computes the analysis-window frequency response used
+                          by the High-resolution Spectral Analysis (HSA).
+shm_hsa : Solves the High-resolution Spectral Analysis (HSA) linear system for
+          a set of candidate modulation rates.
 
 Ownership and Quality Assurance
 -------------------------------
@@ -41,7 +52,7 @@ Author: Mike JB Lotinga (m.j.lotinga@edu.salford.ac.uk)
 Institution: University of Salford
 
 Date created: 27/10/2023
-Date last modified: 02/03/2026
+Date last modified: 18/09/2026
 Python version: 3.11
 
 Copyright statement: This code has been developed during work undertaken within
@@ -69,6 +80,7 @@ import matplotlib.ticker as ticker
 from scipy.signal import (freqz, lfilter, resample_poly, sosfilt, sosfreqz)
 from scipy.special import comb
 from math import gcd
+import bottleneck as bn
 from sottek_hearing_model.plotting_tools import create_figure, show_plot
 
 # set plot parameters
@@ -1287,3 +1299,480 @@ def shm_in_check(signal, samp_rate_in, axis, soundfield,
 
     return signal, chans_in, chans
 # end of shm_in_check function
+
+
+# %% shm_mov_median
+def shm_mov_median(vals, win_len, axis=0):
+    """shm_mov_median(vals, win_len, axis=0)
+
+    Returns the centred moving median of an array along a given axis, with
+    the window shrinking symmetrically at the endpoints (i.e. the median is
+    taken over the elements that exist within the half-window either side
+    of each point). This is equivalent to the MATLAB movmedian function
+    with its default 'shrink' endpoint handling, which is the moving median
+    filter used in Sections 9.1.3.2 and 9.1.11 of ECMA-418-2:2025.
+
+    Parameters
+    ----------
+    vals : nD array
+        Input array.
+
+    win_len : integer (odd)
+        Moving window length in samples.
+
+    axis : integer (default: 0)
+        Axis along which to apply the moving median.
+
+    Returns
+    -------
+    med_vals : nD array
+        Moving median of the input array, the same shape as vals.
+
+    Assumptions
+    -----------
+    win_len is an odd positive integer, so that the window is symmetric
+    about each point.
+
+    """
+
+    # %% Input check
+    if win_len < 1 or win_len % 2 == 0:
+        raise ValueError("Input argument 'win_len' must be an odd positive integer.")
+
+    vals = np.asarray(vals, dtype=float)
+    n = vals.shape[axis]
+    half = (win_len - 1)//2
+
+    # %% Signal processing
+
+    if n <= win_len:
+        # short input: form the shrinking-window median directly
+        med_vals = np.empty_like(vals)
+        for ii in range(n):
+            lo = max(0, ii - half)
+            hi = min(n, ii + half + 1)
+            med_slice = np.median(np.take(vals, np.arange(lo, hi), axis=axis),
+                                  axis=axis)
+            index = [slice(None)]*vals.ndim
+            index[axis] = ii
+            med_vals[tuple(index)] = med_slice
+        return med_vals
+
+    # trailing (causal) moving median with shrinking window at the start:
+    # med_fwd[i] = median(vals[i - win_len + 1:i + 1])
+    med_fwd = bn.move_median(vals, window=win_len, min_count=1, axis=axis)
+    # leading (anti-causal) moving median with shrinking window at the end,
+    # obtained by applying the trailing filter to the flipped array:
+    # med_bwd[i] = median(vals[i:i + win_len])
+    med_bwd = np.flip(bn.move_median(np.flip(vals, axis=axis), window=win_len,
+                                     min_count=1, axis=axis), axis=axis)
+
+    # centred median: for c <= n - 1 - half, median(vals[c - half:c + half + 1])
+    # = med_fwd[c + half] (which also shrinks correctly at the start); for the
+    # final half points, = med_bwd[c - half] (which shrinks correctly at the
+    # end)
+    med_vals = np.concatenate((np.take(med_fwd, np.arange(half, n), axis=axis),
+                               np.take(med_bwd, np.arange(n - 2*half, n - half),
+                                       axis=axis)), axis=axis)
+
+    return med_vals
+# end of shm_mov_median function
+
+
+# %% shm_loud_nonlin
+def shm_loud_nonlin(p_rms):
+    """shm_loud_nonlin(p_rms)
+
+    Returns the loudness obtained by applying the nonlinear transformation
+    of Section 5.1.8 Equation 23 ECMA-418-2:2025 (the Sottek Hearing Model)
+    to an input root-mean-square sound pressure (without the subtraction of
+    the threshold-in-quiet loudness of Section 5.1.9).
+
+    Parameters
+    ----------
+    p_rms : float or array of floats
+        Root-mean-square sound pressure(s) [Pa].
+
+    Returns
+    -------
+    loud_nonlin : float or array of floats
+        Loudness value(s) [sone_HMS/Bark_HMS], the same shape as p_rms.
+
+    Assumptions
+    -----------
+    The input is calibrated to units of acoustic pressure in Pascals (Pa).
+
+    """
+
+    # %% Define constants
+
+    # Section 5.1.8 Equation 23/24 ECMA-418-2:2025 [c_N], [alpha]
+    cal_N = 0.0211668
+    cal_Nx = 1.00132  # calibration adjustment factor (Footnote 8 ECMA-418-2:2025)
+    a = 1.5
+
+    # Section 5.1.8 Table 2 ECMA-418-2:2025 [p_ti], [nu_i] (nu_0 = 1 prepended)
+    p_threshold = 2e-5*10**(np.arange(15, 95, 10)/20)
+    v = np.array([1, 0.6602, 0.0864, 0.6384, 0.0328, 0.4068, 0.2082, 0.3994,
+                  0.6434])
+
+    # %% Signal processing
+
+    p_rms = np.asarray(p_rms, dtype=float)
+
+    # Section 5.1.8 Equation 23 ECMA-418-2:2025
+    loud_nonlin = (cal_N*cal_Nx*(p_rms/2e-5)
+                   * np.prod((1 + (p_rms[..., np.newaxis]/p_threshold)**a)
+                             ** (np.diff(v)/a), axis=-1))
+
+    return loud_nonlin
+# end of shm_loud_nonlin function
+
+
+# %% shm_fluct_weight
+def shm_fluct_weight(mod_rate, band_centre_freq):
+    """shm_fluct_weight(mod_rate, band_centre_freq)
+
+    Returns the fluctuation strength band-pass modulation-rate weighting
+    w_lh according to ECMA-418-2:2025 (the Sottek Hearing Model), Section
+    9.1.6, Equation 148.
+
+    Parameters
+    ----------
+    mod_rate : float or array of floats
+        Modulation rate(s) [Hz] at which to evaluate the weighting (values
+        of zero or less return a weighting of zero).
+
+    band_centre_freq : float
+        Critical band centre frequency F(z) [Hz], used in the carrier-
+        frequency correction applied to the high-modulation-rate branch.
+
+    Returns
+    -------
+    fluct_weight : array of floats
+        The weighting values w_lh(mod_rate), the same shape as mod_rate.
+
+    Assumptions
+    -----------
+    band_centre_freq is a scalar value corresponding with a single critical
+    band, consistent with a single call of this function per band.
+
+    """
+
+    # %% Define constants
+
+    # Section 9.1.6 Equation 148
+    f_max = 4.8659  # [f_max], Hz: modulation rate of maximum (unity) weighting
+    q1l = 0.33048
+    q2l = 0.85902
+    q1h = 0.21792
+    q2h = 4.6728
+
+    # carrier-frequency correction factor for the high-modulation-rate branch
+    freq_correction = (1 + 0.092623*np.abs(np.log2(band_centre_freq/1000))**1.24)**-1
+
+    # %% Signal processing
+
+    mod_rate = np.atleast_1d(np.asarray(mod_rate, dtype=float))
+    fluct_weight = np.zeros(mod_rate.shape)
+
+    mask_lo = (mod_rate > 0) & (mod_rate <= f_max)
+    mask_hi = mod_rate > f_max
+
+    fluct_weight[mask_lo] = (1/(1 + ((mod_rate[mask_lo]/f_max
+                                      - f_max/mod_rate[mask_lo])*q1l)**2))**q2l
+    fluct_weight[mask_hi] = freq_correction*(1/(1 + ((mod_rate[mask_hi]/f_max
+                                                      - f_max/mod_rate[mask_hi])
+                                                     * q1h)**2))**q2h
+
+    return fluct_weight
+# end of shm_fluct_weight function
+
+
+# %% shm_hsa_window_response
+def shm_hsa_window_response(k_indices, mod_rate, block_size, samp_rate,
+                            n_zeros_start, n_zeros_end, epsilon=1e-12):
+    """shm_hsa_window_response(k_indices, mod_rate, block_size, samp_rate,
+                               n_zeros_start, n_zeros_end, epsilon=1e-12)
+
+    Returns the analysis-window frequency response used by the High-
+    resolution Spectral Analysis (HSA), according to ECMA-418-2:2025 (the
+    Sottek Hearing Model), Section 9.1.4, Equation 127.
+
+    Parameters
+    ----------
+    k_indices : 1D array
+        The (zero-based) DFT bin indices k at which to evaluate the window
+        response, k = 0, ..., K_L - 1.
+
+    mod_rate : float
+        The candidate modulation rate f_c,m [Hz] at which the window is
+        centred (may be zero, positive or negative).
+
+    block_size : integer
+        The downsampled analysis block size s~b (Section 9.1.2).
+
+    samp_rate : float
+        The downsampled analysis sample rate r~s (Section 9.1.2).
+
+    n_zeros_start : integer
+        Number of zeros at the start of the envelope analysis window,
+        n_zb,l,z.
+
+    n_zeros_end : integer
+        Number of zeros at the end of the envelope analysis window,
+        n_ze,l,z.
+
+    epsilon : float (default: 1e-12)
+        Small constant substituted for the standard's epsilon_0 (defined as
+        the smallest positive double such that 1 + epsilon_0 > 1), added to
+        avoid division by zero when a candidate modulation rate falls
+        exactly on a DFT bin centre. The value used has no measurable
+        effect on the result (see the Note in shm_hsa), and 1e-12 is used
+        for consistency with the other functions in this package.
+
+    Returns
+    -------
+    window_response : 1D complex array
+        The complex window response W_E,l,z,fc,m(k), the same length as
+        k_indices.
+
+    Assumptions
+    -----------
+    k_indices are zero-based DFT bin indices, consistent with the zero-based
+    indexing convention used throughout ECMA-418-2:2025.
+
+    """
+
+    # %% Signal processing
+
+    # number of samples with unity weight in the analysis window [n_active]
+    n_active = block_size - n_zeros_end - n_zeros_start
+
+    # Section 9.1.4 Equation 127 [f_n(k)]
+    freq_norm = k_indices/block_size - mod_rate/samp_rate + epsilon
+
+    # CORRECTION relative to the printed standard: Equation 127 as typeset in
+    # ECMA-418-2:2025 shows the phase term exp(-j*2*pi*f_n(k)*(...)), which
+    # is a factor of 2 too large. A closed-form re-derivation of the
+    # underlying geometric series (the DFT of a rectangular window of
+    # n_active ones preceded by n_zb zeros), and a brute-force numerical DFT
+    # comparison, both confirm that the correct phase term is
+    # exp(-j*pi*f_n(k)*(...)) (see shmHSAWindowResponse.m and test_shmHSA.m
+    # in the refmap-psychoacoustics repository).
+    # As-written: window_response = (np.exp(-1j*2*np.pi*freq_norm*(block_size - n_zeros_end + n_zeros_start - 1))
+    #                                *np.sin(np.pi*freq_norm*n_active)/np.sin(np.pi*freq_norm))
+    window_response = (np.exp(-1j*np.pi*freq_norm*(block_size - n_zeros_end
+                                                    + n_zeros_start - 1))
+                       * np.sin(np.pi*freq_norm*n_active)/np.sin(np.pi*freq_norm))
+
+    return window_response
+# end of shm_hsa_window_response function
+
+
+# %% shm_hsa
+def shm_hsa(fc, spectrum_e, block_size, samp_rate, n_zeros_start, n_zeros_end,
+            epsilon=1e-12):
+    """shm_hsa(fc, spectrum_e, block_size, samp_rate, n_zeros_start,
+               n_zeros_end, epsilon=1e-12)
+
+    Returns the High-resolution Spectral Analysis (HSA) estimate of the
+    constant (DC) component and the complex spectral line amplitude(s) at
+    the candidate modulation rate(s) fc, together with the corresponding
+    HSA error function value, according to ECMA-418-2:2025 (the Sottek
+    Hearing Model), Section 9.1.4.
+
+    Parameters
+    ----------
+    fc : float or 1D array
+        Candidate modulation rate(s) [Hz] of the Mc non-zero spectral line
+        pairs under consideration, fc = (fc_1, ..., fc_Mc). The zero
+        (constant) component is handled internally and must NOT be included
+        in fc. Negative values are accepted (the error function E_l,z is an
+        even function of each fc, since W+ is even and W- is odd in fc), so
+        that the Newton iteration of Section 9.1.7 may pass through zero and
+        the resulting f_c,1,opt < 0.125 Hz is then discarded by the caller
+        as the standard specifies, rather than raising an error.
+
+    spectrum_e : 1D complex array
+        The s~b-point complex DFT spectrum P_E,l,z(k) of the windowed,
+        downsampled envelope (Section 9.1.4 Equation 121), full length
+        (k = 0, ..., s~b - 1).
+
+    block_size : integer
+        Downsampled analysis block size s~b (Section 9.1.2).
+
+    samp_rate : float
+        Downsampled analysis sample rate r~s (Section 9.1.2).
+
+    n_zeros_start : integer
+        Number of zeros at the start of the envelope analysis window,
+        n_zb,l,z.
+
+    n_zeros_end : integer
+        Number of zeros at the end of the envelope analysis window,
+        n_ze,l,z.
+
+    epsilon : float (default: 1e-12)
+        Small constant substituted for the standard's epsilon_0 (see
+        shm_hsa_window_response).
+
+    Returns
+    -------
+    p_hat : 1D complex array, length Mc + 1
+        The HSA-estimated complex spectral amplitudes: p_hat[0] = phat_0,l,z
+        (real-valued constant part), p_hat[1:] = phat_fc,m,l,z (complex),
+        m = 1, ..., Mc, in the same order as the input fc. The spectral
+        line amplitudes are TWO-SIDED line amplitudes, i.e. an envelope
+        component a*cos(2*pi*fc*t + phi) is returned as
+        phat_fc = (a/2)*exp(1j*phi) (see the Note below).
+
+    err_lz : float
+        The HSA error function value E_l,z(fc) (Section 9.1.4 Equation 135).
+
+    Assumptions
+    -----------
+    fc contains only the non-zero candidate modulation rate(s); the
+    constant (DC) part is always included as an additional unknown and
+    must not be passed explicitly.
+
+    Note
+    ----
+    This function implements the general Mc-line case (Section 9.1.4,
+    Equations 121-135) directly, solving the (2*Mc + 1)-by-(2*Mc + 1) linear
+    system of Equation 130. This is also used for the single spectral line
+    pair case (Mc = 1), for which Section 9.1.4.1 additionally provides a
+    closed-form solution via Cramer's rule (Equations 136-142). The
+    closed-form solution is mathematically identical to the general solution
+    for Mc = 1 (it is simply an expanded, manual method of solving the same
+    3-by-3 instance of Formula (130)), so solving the general system is not
+    an approximation or a shortcut: it produces the same result (to
+    floating-point rounding) while keeping a single, simpler, and more
+    easily verified code path for all values of Mc.
+
+    Note also that Formula (126) defines the column of W corresponding to
+    the "minus" component (index i = 2*m + 1) as the COMPLEX CONJUGATE of
+    W-_E,l,z,fc,m(k) (Equation 129); this conjugation is essential to
+    obtaining correct results and is easy to miss when transcribing the
+    formulae, since Equation 129 itself does not show the conjugation
+    (it is introduced only in Formula (126), and repeated in the a13/a23/b3
+    terms of Formulae (138)-(139) for the Mc = 1 case).
+
+    Note on the amplitude convention of phat_fc,m (Equation 123): the
+    real-valued normal equations of Formulae (130)-(134) are exactly the
+    least-squares fit of the model
+      Phat(k) = x_1*W_0(k) + sum_m [x_2m*W+_m(k) + j*x_2m+1*W-_m(k)]
+    to P_E,l,z(k), which is the DFT of the windowed envelope model
+      x_1 + sum_m 2*Re((x_2m + j*x_2m+1)*exp(j*2*pi*fc,m*ntilde/rs~)).
+    Hence (x_2m + j*x_2m+1) is the two-sided line amplitude (the line at
+    +fc,m, with its conjugate at -fc,m), and 2*(x_2m + j*x_2m+1) would be
+    the one-sided (cosine) amplitude. Equation 123 as printed
+    (x_i = Re(phat)/2, Im(phat)/2) implies the one-sided convention, but
+    Equations 159-160 (phat_0^2 + 2*sum(A_i) as the mean-square power of
+    the harmonic complex, and sqrt(0.5*(...)) as the RMS sound pressure
+    passed to the nonlinearity of Equation 23) and footnote 46 (the DFT
+    line values of Equation 66 equal the HSA line values multiplied by the
+    DFT length s~b) are only consistent with the two-sided convention.
+    The two-sided convention is therefore used here, and has been
+    verified against reference results: using the literal Equation 123
+    factor of 2 overestimates |phat|^2 by a factor of 4 and the
+    harmonic-complex power by up to a factor of 2, and reproduces a
+    modulation-depth-dependent overestimation of fluctuation strength
+    (approx. 1.8x at m = 1 rising to 3x at m = 0.25) relative to the
+    reference results.
+
+    """
+
+    # %% Define constants
+
+    fc = np.atleast_1d(np.asarray(fc, dtype=float))
+    mc = fc.size  # number of non-zero candidate spectral line pairs
+    n_cols = 2*mc + 1  # number of unknowns/columns, size of x [2Mc + 1]
+
+    # Section 9.1.4 Equation 125 [Delta f] and [K_L]
+    # (np.floor(x + 0.5) reproduces the standard's rounding to the nearest
+    # integer, half away from zero, for the non-negative argument here)
+    delta_f = samp_rate/block_size
+    kl = int(min(max(17, np.floor(np.max(np.abs(fc))/delta_f + 0.5) + 8), 49))
+
+    k_indices = np.arange(kl)  # zero-based DFT bin indices used in the fit
+
+    # %% Signal processing
+
+    # Section 9.1.4 Equation 126 - build the matrix of window response
+    # column vectors W = (W_1, ..., W_2Mc+1)
+    w = np.zeros((kl, n_cols), dtype=complex)
+
+    # constant (DC) part, i = 1 [W_E,l,z,0(k)]
+    w[:, 0] = shm_hsa_window_response(k_indices, 0.0, block_size, samp_rate,
+                                      n_zeros_start, n_zeros_end, epsilon)
+
+    for m_line in range(mc):
+        window_pos = shm_hsa_window_response(k_indices, fc[m_line], block_size,
+                                             samp_rate, n_zeros_start,
+                                             n_zeros_end, epsilon)
+        window_neg = shm_hsa_window_response(k_indices, -fc[m_line], block_size,
+                                             samp_rate, n_zeros_start,
+                                             n_zeros_end, epsilon)
+
+        # Equation 128 [W+_E,l,z,fc,m(k)], i = 2m
+        w[:, 2*m_line + 1] = window_pos + window_neg
+
+        # Equation 129 [W-_E,l,z,fc,m(k)], conjugated per Equation 126, i = 2m+1
+        w[:, 2*m_line + 2] = np.conj(window_pos - window_neg)
+
+    # Section 9.1.4 Equations 132-133 - index sets I_R (and, by the same
+    # definition, J_R) identifying which columns are treated as the 'real'
+    # (cosine-type) part of the system (i = 1 or mod(i, 2) = 0 in the
+    # standard's 1-based column numbering)
+    is_real_col = np.zeros(n_cols, dtype=bool)
+    is_real_col[0] = True
+    is_real_col[1::2] = True
+    same_bucket = is_real_col[:, np.newaxis] == is_real_col[np.newaxis, :]
+
+    # Section 9.1.4 Equation 131 - symmetric matrix A
+    # (the formula for a_ij is symmetric under exchange of i and j in both
+    # branches, so the full matrix can be built directly without separately
+    # enforcing symmetry)
+    wr = np.real(w)
+    wi = np.imag(w)
+    a = ((wr.T@wr + wi.T@wi)*same_bucket
+         + (wi.T@wr + wr.T@wi)*(~same_bucket))
+
+    # Section 9.1.4 Equation 134 - vector b
+    spectrum_ek = spectrum_e[:kl]  # PE,l,z(k) at the KL bins used
+    pe_r = np.real(spectrum_ek)
+    pe_i = np.imag(spectrum_ek)
+
+    b = np.zeros(n_cols)
+    b[is_real_col] = wr[:, is_real_col].T@pe_r + wi[:, is_real_col].T@pe_i
+    b[~is_real_col] = wr[:, ~is_real_col].T@pe_i + wi[:, ~is_real_col].T@pe_r
+
+    # Section 9.1.4 Equation 130 - solve A*x = b
+    # (a numerical robustness safeguard, not specified by the standard: fall
+    # back to the minimum-norm least-squares solution if A is close to
+    # singular, which can occur for pathological candidate frequency sets)
+    try:
+        rcond_a = 1/np.linalg.cond(a, p=1)
+    except np.linalg.LinAlgError:
+        rcond_a = 0.0
+    if not np.isfinite(rcond_a) or rcond_a < 1e3*np.finfo(float).eps:
+        x = np.linalg.pinv(a)@b
+    else:
+        x = np.linalg.solve(a, b)
+
+    # Section 9.1.4 Equation 135 - error function
+    # (a_ii*x_i^2 summed with 2*sum_{i<j}(a_ij*xi*xj) is exactly x'*A*x for
+    # symmetric A, giving a compact, fully vectorised equivalent of Formula
+    # (135))
+    err_lz = np.sum(np.abs(spectrum_ek)**2) + x@a@x - 2*b@x
+
+    # Section 9.1.4 Equation 123 (inverted) - recover the complex spectral
+    # amplitudes from the solution vector x, as TWO-SIDED line amplitudes
+    # phat_fc,m = x_2m + j*x_2m+1 (see the Note in the function help)
+    p_hat = np.zeros(mc + 1, dtype=complex)
+    p_hat[0] = x[0]  # [phat_0,l,z], real-valued
+    p_hat[1:] = x[1::2] + 1j*x[2::2]  # [phat_fc,m,l,z], two-sided line amplitude
+
+    return p_hat, err_lz
+# end of shm_hsa function
